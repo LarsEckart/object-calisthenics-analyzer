@@ -19,6 +19,17 @@ The plugin currently enforces six rules:
 6. A class or record that has a collection or array field may not have any
    other instance fields/components. (`forbidNonFirstClassCollections`)
 
+## What it does not check (yet)
+
+Out of the nine Object Calisthenics rules, three are not implemented yet:
+
+- **Wrap all primitives and strings.** Telling domain values apart from plain
+  configuration or framework types needs project-specific configuration.
+- **One dot per line.** Requires a clear policy on fluent APIs and lawful
+  Demeter violations (for example, `System.out.println`).
+- **Don't abbreviate.** Needs a configurable list of abbreviations per team or
+  codebase.
+
 ## Install
 
 The plugin is not published to the Gradle Plugin Portal or Maven Central yet.
