@@ -11,10 +11,11 @@ public record RuleSet(
     boolean forbidElse,
     int maxMethodNesting,
     boolean forbidGetters,
-    boolean forbidSetters
+    boolean forbidSetters,
+    boolean forbidNonFirstClassCollections
 ) {
 
   public static RuleSet defaults() {
-    return new RuleSet(50, 2, true, 1, true, true);
+    return new RuleSet(50, 2, true, 1, true, true, false);
   }
 }

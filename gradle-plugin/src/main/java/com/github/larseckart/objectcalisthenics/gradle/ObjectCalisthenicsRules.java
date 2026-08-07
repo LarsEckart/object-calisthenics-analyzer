@@ -28,6 +28,9 @@ public abstract class ObjectCalisthenicsRules {
   @Input
   public abstract Property<Boolean> getForbidSetters();
 
+  @Input
+  public abstract Property<Boolean> getForbidNonFirstClassCollections();
+
   @Inject
   public ObjectCalisthenicsRules() {
     getMaxClassLines().convention(50);
@@ -36,5 +39,6 @@ public abstract class ObjectCalisthenicsRules {
     getMaxMethodNesting().convention(1);
     getForbidGetters().convention(true);
     getForbidSetters().convention(true);
+    getForbidNonFirstClassCollections().convention(false);
   }
 }

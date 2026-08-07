@@ -7,10 +7,14 @@ import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import com.github.javaparser.utils.SourceRoot;
 
@@ -21,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Analyzes Java source files for Object Calisthenics violations.
@@ -33,6 +38,26 @@ public class ObjectCalisthenicsAnalyzer {
 
   private final RuleSet rules;
   private final ParserConfiguration parserConfiguration;
+
+  // Simple name matching for JDK collection types and their common implementations.
+  // This intentionally does not require JavaParser's symbol solver.
+  private static final Set<String> JDK_COLLECTION_TYPE_NAMES = Set.of(
+      "Collection",
+      "List", "ArrayList", "LinkedList", "CopyOnWriteArrayList",
+      "Set", "HashSet", "LinkedHashSet", "TreeSet", "SortedSet", "NavigableSet", "EnumSet", "CopyOnWriteArraySet",
+      "Map", "HashMap", "LinkedHashMap", "TreeMap", "SortedMap", "NavigableMap", "EnumMap",
+      "ConcurrentMap", "ConcurrentHashMap", "ConcurrentNavigableMap",
+      "Hashtable", "Properties", "Dictionary",
+      "Vector", "Stack",
+      "Queue", "Deque", "ArrayDeque", "PriorityQueue",
+      "BlockingQueue", "LinkedBlockingQueue", "ArrayBlockingQueue", "PriorityBlockingQueue",
+      "DelayQueue", "SynchronousQueue", "LinkedTransferQueue", "TransferQueue",
+      "ConcurrentLinkedQueue", "ConcurrentLinkedDeque", "LinkedBlockingDeque", "BlockingDeque",
+      "Iterable"
+  );
+
+  private record FieldInfo(String name, Type type) {
+  }
 
   public ObjectCalisthenicsAnalyzer(RuleSet rules) {
     this.rules = rules;
@@ -98,9 +123,11 @@ public class ObjectCalisthenicsAnalyzer {
     if (type instanceof RecordDeclaration record) {
       checkClassLength(record, file, violations);
       checkRecordFields(record, file, violations);
+      checkFirstClassCollections(record, file, violations);
     } else if (type instanceof ClassOrInterfaceDeclaration classDecl) {
       checkClassLength(classDecl, file, violations);
       checkClassFields(classDecl, file, violations);
+      checkFirstClassCollections(classDecl, file, violations);
     }
   }
 
@@ -197,6 +224,62 @@ public class ObjectCalisthenicsAnalyzer {
               record.getNameAsString(), components, rules.maxFieldsPerClass())
       ));
     }
+  }
+
+  private void checkFirstClassCollections(TypeDeclaration<?> type, Path file, List<Violation> violations) {
+    if (!rules.forbidNonFirstClassCollections()) {
+      return;
+    }
+
+    List<FieldInfo> fields = new ArrayList<>();
+    if (type instanceof ClassOrInterfaceDeclaration classDecl && !classDecl.isInterface()) {
+      for (FieldDeclaration field : classDecl.getFields()) {
+        if (field.isStatic()) {
+          continue;
+        }
+        for (VariableDeclarator variable : field.getVariables()) {
+          fields.add(new FieldInfo(variable.getNameAsString(), variable.getType()));
+        }
+      }
+    } else if (type instanceof RecordDeclaration record) {
+      for (Parameter parameter : record.getParameters()) {
+        fields.add(new FieldInfo(parameter.getNameAsString(), parameter.getType()));
+      }
+    }
+
+    long collectionFields = fields.stream().filter(f -> isCollectionType(f.type())).count();
+    long otherFields = fields.size() - collectionFields;
+
+    if (collectionFields > 0 && (collectionFields > 1 || otherFields > 0)) {
+      violations.add(new Violation(
+          file,
+          type.getBegin().map(p -> p.line).orElse(0),
+          "non-first-class-collection",
+          "%s is not a first-class collection: %d collection field(s) and %d other instance field(s)".formatted(
+              type.getNameAsString(), collectionFields, otherFields)
+      ));
+    }
+  }
+
+  private boolean isCollectionType(Type type) {
+    if (type.isArrayType()) {
+      return true;
+    }
+    if (type.isClassOrInterfaceType()) {
+      String simpleName = getSimpleName(type.asClassOrInterfaceType());
+      return JDK_COLLECTION_TYPE_NAMES.contains(simpleName);
+    }
+    return false;
+  }
+
+  private static String getSimpleName(ClassOrInterfaceType type) {
+    String raw = type.asString();
+    int genericStart = raw.indexOf('<');
+    if (genericStart >= 0) {
+      raw = raw.substring(0, genericStart);
+    }
+    int lastDot = raw.lastIndexOf('.');
+    return lastDot >= 0 ? raw.substring(lastDot + 1) : raw;
   }
 
   private void checkMethod(MethodDeclaration method, Path file, List<Violation> violations) {

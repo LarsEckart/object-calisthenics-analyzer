@@ -70,6 +70,44 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
+  void detectsNonFirstClassCollectionClass() {
+    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer(
+        new RuleSet(50, 2, true, 1, true, true, true));
+
+    AnalysisResult result = analyzerWithCollectionRule.analyze(
+        List.of(samplesDir.resolve("NonFirstClassCollectionClass.java")));
+
+    assertThat(result.violations())
+        .hasSize(1)
+        .allMatch(v -> v.rule().equals("non-first-class-collection"));
+  }
+
+  @Test
+  void detectsNonFirstClassArrayClass() {
+    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer(
+        new RuleSet(50, 2, true, 1, true, true, true));
+
+    AnalysisResult result = analyzerWithCollectionRule.analyze(
+        List.of(samplesDir.resolve("NonFirstClassArrayClass.java")));
+
+    assertThat(result.violations())
+        .hasSize(1)
+        .allMatch(v -> v.rule().equals("non-first-class-collection"));
+  }
+
+  @Test
+  void cleanFirstClassCollectionAndArrayClassesHaveNoCollectionViolation() {
+    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer(
+        new RuleSet(50, 2, true, 1, true, true, true));
+
+    AnalysisResult result = analyzerWithCollectionRule.analyze(List.of(
+        samplesDir.resolve("FirstClassCollectionClass.java"),
+        samplesDir.resolve("FirstClassArrayClass.java")));
+
+    assertThat(result.violations()).isEmpty();
+  }
+
+  @Test
   void cleanClassHasNoViolations() {
     Path cleanDir = samplesDir.resolve("../clean").normalize();
     AnalysisResult result = analyzer.analyze(cleanDir);

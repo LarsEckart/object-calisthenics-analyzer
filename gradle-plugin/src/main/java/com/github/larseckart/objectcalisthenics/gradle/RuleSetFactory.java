@@ -15,7 +15,8 @@ final class RuleSetFactory {
         rules.getForbidElse().get(),
         rules.getMaxMethodNesting().get(),
         rules.getForbidGetters().get(),
-        rules.getForbidSetters().get()
+        rules.getForbidSetters().get(),
+        rules.getForbidNonFirstClassCollections().get()
     );
   }
 }

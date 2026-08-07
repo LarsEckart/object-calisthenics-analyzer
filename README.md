@@ -8,7 +8,7 @@ Calisthenics rules.
 
 ## What it checks
 
-The plugin currently enforces five rules:
+The plugin currently enforces six rules:
 
 1. Keep all classes under 50 meaningful lines. (`maxClassLines`)
 2. No class or record may have more than two instance fields/components.
@@ -16,6 +16,8 @@ The plugin currently enforces five rules:
 3. Do not use the `else` keyword. (`forbidElse`)
 4. One level of nesting per method. (`maxMethodNesting`)
 5. No getters or setters by method name. (`forbidGetters`, `forbidSetters`)
+6. A class or record that has a collection or array field may not have any
+   other instance fields/components. (`forbidNonFirstClassCollections`)
 
 ## Install
 
@@ -49,6 +51,7 @@ objectCalisthenics {
         maxMethodNesting.set(1)
         forbidGetters.set(true)
         forbidSetters.set(true)
+        forbidNonFirstClassCollections.set(true)
     }
 
     reports {
@@ -75,7 +78,8 @@ objectCalisthenics {
     "classes_over_2_fields": 0,
     "methods_with_else": 0,
     "methods_over_nested": 0,
-    "getter_setter_methods": 0
+    "getter_setter_methods": 0,
+    "non_first_class_collections": 0
   },
   "details": [
     {

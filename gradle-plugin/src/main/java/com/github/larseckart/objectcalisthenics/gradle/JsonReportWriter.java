@@ -41,6 +41,9 @@ final class JsonReportWriter {
     sb.append("    \"methods_over_nested\": ").append(count(violations, "method-over-nested")).append(",\n");
     sb.append("    \"getter_setter_methods\": ")
         .append(count(violations, "getter") + count(violations, "setter"))
+        .append(",\n");
+    sb.append("    \"non_first_class_collections\": ")
+        .append(count(violations, "non-first-class-collection"))
         .append("\n");
     sb.append("  },\n");
     sb.append("  \"details\": [\n");
