@@ -1,74 +1,42 @@
 # Object Calisthenics Analyzer
 
 A small Java [JavaParser](https://javaparser.org/)-based analyzer plus a Gradle
-plugin that checks Java projects against the Object Calisthenics rules.
+plugin that checks Java projects against a configurable set of Object
+Calisthenics rules.
 
-The analyzer replaces the regex-based `.auto/measure.sh` script from the
-`padel-slop-kata` repository with an AST-aware implementation that is much less
-fragile around generics, records, lambdas, annotations, and nested classes.
+## What it checks
 
-## Modules
-
-- **`analyzer`** – Java library that parses source and reports violations.
-- **`gradle-plugin`** – Thin Gradle wrapper that adds
-  `objectCalisthenicsCheck` and `objectCalisthenicsReport` tasks.
-
-## Currently enforced rules
-
-The first version reproduces the five measurable rules from `measure.sh`:
+The plugin currently enforces five rules:
 
 1. Keep all classes under 50 meaningful lines. (`maxClassLines`)
-2. No class or record may have more than two instance fields/components. (`maxFieldsPerClass`)
+2. No class or record may have more than two instance fields/components.
+   (`maxFieldsPerClass`)
 3. Do not use the `else` keyword. (`forbidElse`)
 4. One level of nesting per method. (`maxMethodNesting`)
 5. No getters or setters by method name. (`forbidGetters`, `forbidSetters`)
 
-The remaining four rules (wrap primitives, first-class collections, one dot per
-line, don't abbreviate) are designed to be added later as optional checks.
-
-## Build
-
-```bash
-./gradlew build
-```
-
-## Run the analyzer from the command line
-
-```bash
-./gradlew :analyzer:run --args="src/main/java"
-```
-
-The CLI prints the same `METRIC` lines as the original Python script, followed
-by a list of individual violations.
-
-## Apply the Gradle plugin
+## Install
 
 The plugin is not published to the Gradle Plugin Portal or Maven Central yet.
-Use it through a Gradle composite build pointing at this repository.
-
-### 1. Include this repository as a composite build
-
-In the consumer project's `settings.gradle.kts`:
+Use it through a Gradle composite build:
 
 ```kotlin
+// settings.gradle.kts in the consumer project
 pluginManagement {
-    includeBuild("../object-calisthenics")
+    includeBuild("../object-calisthenics-analyzer")
 }
 ```
 
-The exact path depends on where the consumer project lives relative to this
-repository. When the path is correct, Gradle resolves the plugin directly from
-the included build, so no `version` is declared in the consumer.
-
-### 2. Apply the plugin
-
-In the Java project's `build.gradle.kts`:
-
 ```kotlin
+// build.gradle.kts in the consumer project
 plugins {
     id("com.github.larseckart.object-calisthenics")
 }
+```
 
+## Use
+
+```kotlin
 objectCalisthenics {
     sourceSet.set(project.sourceSets["main"])
 
@@ -117,11 +85,3 @@ objectCalisthenics {
   ]
 }
 ```
-
-## Migration from the Python script
-
-1. Build and publish the plugin locally (or include the project).
-2. Run both the plugin and `measure.sh` on the same source root.
-3. Compare the `METRIC` lines.
-4. Tune rules or violation details until parity is good enough.
-5. Remove `measure.sh` once the plugin is trusted.
