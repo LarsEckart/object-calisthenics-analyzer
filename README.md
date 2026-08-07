@@ -1,3 +1,5 @@
+[![Certified Shovelware](https://justin.searls.co/img/shovelware.svg)](https://justin.searls.co/shovelware/)
+
 # Object Calisthenics Analyzer
 
 A small Java [JavaParser](https://javaparser.org/)-based analyzer plus a Gradle
