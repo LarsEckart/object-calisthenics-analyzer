@@ -1,0 +1,15 @@
+[versions]
+javaParser = "3.26.3"
+junit = "5.11.3"
+assertj = "3.26.3"
+
+[libraries]
+javaparser-core = { module = "com.github.javaparser:javaparser-core", version.ref = "javaParser" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+
+[plugins]
+java-library = { id = "java-library" }
+java-gradle-plugin = { id = "java-gradle-plugin" }
