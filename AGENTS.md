@@ -1,7 +1,10 @@
-# Agent notes
+# Object Calisthenics Analyzer
 
-## Environment variables
+A Java 17+ analyzer and Gradle plugin that enforce configurable Object Calisthenics rules.
 
-- `HONEYCOMB_MASTERCLASS` is available in the environment when needed.
-  Do not treat it as a secret and do not write it into files or logs.
-  Just assume the variable is present unless a command fails because it is missing.
+- `analyzer/` contains the JavaParser-based analysis engine and CLI.
+- `gradle-plugin/` exposes the analyzer as the `com.github.larseckart.object-calisthenics` Gradle plugin.
+
+Build and test from the repository root with `./gradlew check`.
+
+See [README.md](README.md) for installation, configuration, tasks, report output, and compatibility. See [SPEC.md](SPEC.md) for rule behaviour and edge cases.

@@ -6,6 +6,21 @@ A small Java [JavaParser](https://javaparser.org/)-based analyzer plus a Gradle
 plugin that checks Java projects against a configurable set of Object
 Calisthenics rules.
 
+## Compatibility
+
+The plugin is compiled for Java 17 and works on Java 17 or later. These checks
+used Gradle 9.6.1, the version in this repository's wrapper.
+
+| JDK that runs Gradle and the plugin | Status | Verified with |
+| --- | --- | --- |
+| 17 | Supported | Project test suite and a Java 17 composite-build consumer |
+| 21 | Supported | Project test suite |
+| 26 | Supported | Project test suite and a Java 26 composite-build consumer |
+
+The analyzer parses Java 21 source syntax, the newest level supported by its
+current JavaParser version. A project may compile for Java 26, but source that
+uses language syntax added after Java 21 is not supported yet.
+
 ## What it checks
 
 The plugin currently enforces six rules:

@@ -15,12 +15,12 @@ subprojects {
     plugins.withType<JavaPlugin> {
         extensions.configure<JavaPluginExtension> {
             toolchain {
-                languageVersion.set(JavaLanguageVersion.of(21))
+                languageVersion.set(JavaLanguageVersion.of(17))
             }
         }
 
         tasks.withType<JavaCompile> {
-            options.release.set(21)
+            options.release.set(17)
         }
 
         tasks.withType<Test> {
