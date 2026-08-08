@@ -1,5 +1,5 @@
 [versions]
-javaParser = "3.26.3"
+javaParser = "3.28.2"
 junit = "5.11.3"
 assertj = "3.26.3"
 

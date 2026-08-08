@@ -17,9 +17,9 @@ used Gradle 9.6.1, the version in this repository's wrapper.
 | 21 | Supported | Project test suite |
 | 26 | Supported | Project test suite and a Java 26 composite-build consumer |
 
-The analyzer parses Java 21 source syntax, the newest level supported by its
-current JavaParser version. A project may compile for Java 26, but source that
-uses language syntax added after Java 21 is not supported yet.
+The analyzer parses Java 26 source syntax, the newest level supported by its
+current JavaParser version. Source that uses language syntax added after Java 26
+is not supported yet.
 
 ## What it checks
 

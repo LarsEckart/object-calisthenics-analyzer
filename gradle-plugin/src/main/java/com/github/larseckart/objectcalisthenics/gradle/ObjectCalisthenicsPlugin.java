@@ -67,5 +67,6 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
     target.getMaxMethodNesting().set(source.getMaxMethodNesting());
     target.getForbidGetters().set(source.getForbidGetters());
     target.getForbidSetters().set(source.getForbidSetters());
+    target.getForbidNonFirstClassCollections().set(source.getForbidNonFirstClassCollections());
   }
 }

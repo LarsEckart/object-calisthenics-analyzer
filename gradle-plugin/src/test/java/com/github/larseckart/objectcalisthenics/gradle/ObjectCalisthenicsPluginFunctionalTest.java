@@ -65,6 +65,44 @@ class ObjectCalisthenicsPluginFunctionalTest {
     assertThat(json).contains("class-too-long");
   }
 
+  @Test
+  void reportTaskAppliesConfiguredFirstClassCollectionRule() throws IOException {
+    writeSettings();
+    Path sourceDir = projectDir.resolve("src/main/java/");
+    Files.createDirectories(sourceDir);
+    Files.writeString(sourceDir.resolve("CollectionOwner.java"), """
+        import java.util.List;
+
+        class CollectionOwner {
+          private List<String> values;
+          private int count;
+        }
+        """);
+
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.github.larseckart.object-calisthenics")
+        }
+
+        objectCalisthenics {
+            rules {
+                forbidNonFirstClassCollections.set(true)
+            }
+        }
+        """);
+
+    GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments("objectCalisthenicsReport", "--stacktrace")
+        .build();
+
+    String json = Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json"));
+    assertThat(json).contains("\"non_first_class_collections\": 1");
+    assertThat(json).contains("\"rule\": \"non-first-class-collection\"");
+  }
+
   private void writeSettings() throws IOException {
     Files.writeString(projectDir.resolve("settings.gradle.kts"), """
         rootProject.name = "functional-test"

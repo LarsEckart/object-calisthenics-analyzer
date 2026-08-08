@@ -62,7 +62,7 @@ public class ObjectCalisthenicsAnalyzer {
   public ObjectCalisthenicsAnalyzer(RuleSet rules) {
     this.rules = rules;
     this.parserConfiguration = new ParserConfiguration()
-        .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_21);
+        .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_26);
   }
 
   public ObjectCalisthenicsAnalyzer() {
