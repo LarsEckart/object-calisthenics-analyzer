@@ -1,5 +1,6 @@
 package com.github.larseckart.objectcalisthenics.gradle;
 
+import com.github.larseckart.objectcalisthenics.analyzer.Advice;
 import com.github.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.github.larseckart.objectcalisthenics.analyzer.Violation;
 
@@ -53,7 +54,8 @@ final class JsonReportWriter {
       sb.append("      \"file\": \"").append(jsonEscape(v.file().toString())).append("\",\n");
       sb.append("      \"line\": ").append(v.line()).append(",\n");
       sb.append("      \"rule\": \"").append(jsonEscape(v.rule())).append("\",\n");
-      sb.append("      \"message\": \"").append(jsonEscape(v.message())).append("\"\n");
+      sb.append("      \"message\": \"").append(jsonEscape(v.message())).append("\",\n");
+      appendAdvice(sb, v.advice());
       sb.append("    }");
       if (i < violations.size() - 1) {
         sb.append(",");
@@ -63,6 +65,21 @@ final class JsonReportWriter {
     sb.append("  ]\n");
     sb.append("}\n");
     return sb.toString();
+  }
+
+  private static void appendAdvice(StringBuilder sb, Advice advice) {
+    sb.append("      \"advice\": {\n");
+    sb.append("        \"principle\": \"").append(jsonEscape(advice.principle())).append("\",\n");
+    sb.append("        \"options\": [");
+    for (int i = 0; i < advice.options().size(); i++) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append("\"").append(jsonEscape(advice.options().get(i))).append("\"");
+    }
+    sb.append("],\n");
+    sb.append("        \"caution\": \"").append(jsonEscape(advice.caution())).append("\"\n");
+    sb.append("      }\n");
   }
 
   private static long count(List<Violation> violations, String rule) {

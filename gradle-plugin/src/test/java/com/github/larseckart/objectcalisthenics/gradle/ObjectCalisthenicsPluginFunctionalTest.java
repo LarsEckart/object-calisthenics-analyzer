@@ -37,6 +37,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
 
     assertThat(result.getOutput()).contains("Object Calisthenics violations found");
     assertThat(result.getOutput()).contains("METRIC violations=");
+    assertThat(result.getOutput()).contains("Why: Keep each class focused on one responsibility.");
   }
 
   @Test
@@ -63,6 +64,8 @@ class ObjectCalisthenicsPluginFunctionalTest {
     String json = Files.readString(report);
     assertThat(json).contains("\"violations\":");
     assertThat(json).contains("class-too-long");
+    assertThat(json).contains("\"advice\"");
+    assertThat(json).contains("Keep each class focused on one responsibility.");
   }
 
   @Test

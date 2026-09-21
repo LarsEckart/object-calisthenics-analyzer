@@ -33,6 +33,20 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
+  void givesRuleSpecificAdvice() {
+    AnalysisResult result = analyzer.analyze(List.of(samplesDir.resolve("ElseMethod.java")));
+
+    Violation violation = result.violations().stream()
+        .filter(v -> v.rule().equals("else-used"))
+        .findFirst()
+        .orElseThrow();
+
+    assertThat(violation.advice().principle()).contains("conditional logic");
+    assertThat(violation.advice().options()).anyMatch(option -> option.contains("guard clause"));
+    assertThat(violation.advice().caution()).contains("domain behaviour");
+  }
+
+  @Test
   void detectsTooManyInstanceFields() {
     AnalysisResult result = analyzer.analyze(samplesDir.resolve("TooManyFieldsClass.java").getParent());
     List<Violation> fieldViolations = result.violations().stream()

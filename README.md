@@ -4,7 +4,8 @@
 
 A small Java [JavaParser](https://javaparser.org/)-based analyzer plus a Gradle
 plugin that checks Java projects against a configurable set of Object
-Calisthenics rules.
+Calisthenics rules. Each finding also explains the design goal, suggests
+possible refactorings, and names the judgement that still needs a human.
 
 ## Compatibility
 
@@ -112,7 +113,15 @@ objectCalisthenics {
       "file": "src/main/java/org/example/ApiResource.java",
       "line": 42,
       "rule": "class-too-long",
-      "message": "ApiResource has 943 meaningful lines (limit 50)"
+      "message": "ApiResource has 943 meaningful lines (limit 50)",
+      "advice": {
+        "principle": "Keep each class focused on one responsibility.",
+        "options": [
+          "Split the class by responsibility, not just by line count.",
+          "Move behaviour together with the data it uses."
+        ],
+        "caution": "Do not split a cohesive class merely to meet the line limit."
+      }
     }
   ]
 }

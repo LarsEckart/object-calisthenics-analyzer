@@ -45,6 +45,11 @@ final class MetricsPrinter {
 
     for (Violation violation : result.violations()) {
       out.println(violation.file() + ":" + violation.line() + " " + violation.rule() + " - " + violation.message());
+      out.println("  Why: " + violation.advice().principle());
+      for (String option : violation.advice().options()) {
+        out.println("  Try: " + option);
+      }
+      out.println("  Note: " + violation.advice().caution());
     }
   }
 }

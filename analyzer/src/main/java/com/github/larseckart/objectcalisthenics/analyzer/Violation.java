@@ -11,4 +11,11 @@ import java.nio.file.Path;
  * @param message human-readable explanation
  */
 public record Violation(Path file, int line, String rule, String message) {
+
+  /**
+   * Returns guidance for improving the design behind this violation.
+   */
+  public Advice advice() {
+    return Advice.forRule(rule);
+  }
 }
