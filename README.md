@@ -48,8 +48,21 @@ Out of the nine Object Calisthenics rules, three are not implemented yet:
 
 ## Install
 
-The plugin is not published to the Gradle Plugin Portal or Maven Central yet.
-Use it through a Gradle composite build:
+After the first release, install the plugin from the Gradle Plugin Portal:
+
+```kotlin
+plugins {
+    id("com.github.larseckart.object-calisthenics") version "<released-version>"
+}
+
+repositories {
+    mavenCentral()
+}
+```
+
+The analyzer library is published to Maven Central as
+`com.larseckart:object-calisthenics-analyzer:<released-version>`.
+Until the first release, use the plugin through a Gradle composite build:
 
 ```kotlin
 // settings.gradle.kts in the consumer project
@@ -64,6 +77,33 @@ plugins {
     id("com.github.larseckart.object-calisthenics")
 }
 ```
+
+## Release
+
+Before making a release, run **Actions → Release → Run workflow** on `main`
+and check that the `validate` job passes. This signs and checks the Maven
+artifacts without publishing them. Then publish a GitHub release with a tag
+such as `v0.1.0`. The release workflow
+runs the tests, publishes the signed analyzer library to Maven Central, waits
+for it to become available, then publishes the plugin to the Gradle Plugin
+Portal and tests it in a fresh build. The plugin ID stays
+`com.github.larseckart.object-calisthenics`.
+
+Before the first release, confirm ownership of the `com.larseckart` Maven
+Central namespace and the plugin ID on the Plugin Portal. Set these GitHub
+Actions secrets in this repository (or share them through an organization):
+`MAVEN_CENTRAL_USERNAME`, `MAVEN_CENTRAL_PASSWORD`, `SIGNING_IN_MEMORY_KEY`,
+`SIGNING_IN_MEMORY_KEY_PASSWORD`, `GRADLE_PUBLISH_KEY`, and
+`GRADLE_PUBLISH_SECRET`. GitHub does not let a workflow in this repository
+read secrets scoped only to another repository. The signing secrets hold the
+full ASCII-armored private key (including the `BEGIN` and `END` lines, not
+base64) and its passphrase. Find them in 1Password: **Private → Java release
+signing — object-calisthenics-analyzer + crappy-java**. The key fingerprint is
+`45353912409CF4BE37320C1FE012009D3EE97E82`; it expires **2028-09-23
+(UTC)**. Fetch the public key from `keyserver.ubuntu.com` by fingerprint to
+check signatures. Keep the old `tcr-extension` key to check past releases; it
+expired in July 2025. Maven Central and Plugin Portal credentials are separate
+from the signing key.
 
 ## Use
 

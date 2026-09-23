@@ -2,9 +2,11 @@ plugins {
     base
 }
 
+val releaseVersion = providers.gradleProperty("releaseVersion").orElse("0.1.0-SNAPSHOT")
+
 allprojects {
-    group = "com.github.larseckart"
-    version = "0.1.0-SNAPSHOT"
+    group = "com.larseckart"
+    version = releaseVersion.get()
 
     repositories {
         mavenCentral()
