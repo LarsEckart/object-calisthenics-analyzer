@@ -5,6 +5,14 @@ plugins {
 
 group = "com.larseckart"
 
+publishing {
+    publications.withType<MavenPublication>().configureEach {
+        if (name == "pluginMaven") {
+            artifactId = "object-calisthenics-gradle-plugin"
+        }
+    }
+}
+
 dependencies {
     implementation(project(":analyzer"))
 
