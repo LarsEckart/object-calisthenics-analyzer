@@ -3,6 +3,8 @@ plugins {
     id("com.gradle.plugin-publish") version "2.2.1"
 }
 
+group = "com.github.larseckart"
+
 dependencies {
     implementation(project(":analyzer"))
 
