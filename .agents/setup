@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+step_start=$SECONDS
+echo "Installing the Java 17 toolchain if needed..."
+if ! dpkg-query -W -f='${Status}' openjdk-17-jdk-headless 2>/dev/null | grep -q '^install ok installed$'; then
+  sudo apt-get update
+  sudo apt-get install -y openjdk-17-jdk-headless
+fi
+echo "Java toolchain ready in $((SECONDS - step_start))s."
+
+step_start=$SECONDS
+echo "Warming the Gradle wrapper and build dependencies..."
+./gradlew --no-daemon testClasses
+echo "Gradle dependencies ready in $((SECONDS - step_start))s."

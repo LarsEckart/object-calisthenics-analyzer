@@ -30,5 +30,8 @@ out/
 # Logs
 *.log
 
+# Amp orb runtime files
+.amp/portals/*
+
 # Keep the Gradle wrapper JAR despite the generic *.jar ignore above
 !gradle/wrapper/gradle-wrapper.jar
