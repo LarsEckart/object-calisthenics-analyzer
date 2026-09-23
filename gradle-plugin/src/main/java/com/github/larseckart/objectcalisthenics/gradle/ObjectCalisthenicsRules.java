@@ -17,6 +17,9 @@ public abstract class ObjectCalisthenicsRules {
   public abstract Property<Integer> getMaxFieldsPerClass();
 
   @Input
+  public abstract Property<Boolean> getIncludeRecordComponentsInFieldRule();
+
+  @Input
   public abstract Property<Boolean> getForbidElse();
 
   @Input
@@ -35,6 +38,7 @@ public abstract class ObjectCalisthenicsRules {
   public ObjectCalisthenicsRules() {
     getMaxClassLines().convention(50);
     getMaxFieldsPerClass().convention(2);
+    getIncludeRecordComponentsInFieldRule().convention(true);
     getForbidElse().convention(true);
     getMaxMethodNesting().convention(1);
     getForbidGetters().convention(true);

@@ -12,6 +12,7 @@ final class RuleSetFactory {
     return new RuleSet(
         rules.getMaxClassLines().get(),
         rules.getMaxFieldsPerClass().get(),
+        rules.getIncludeRecordComponentsInFieldRule().get(),
         rules.getForbidElse().get(),
         rules.getMaxMethodNesting().get(),
         rules.getForbidGetters().get(),

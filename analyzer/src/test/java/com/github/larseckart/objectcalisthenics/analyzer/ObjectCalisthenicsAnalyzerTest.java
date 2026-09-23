@@ -58,6 +58,39 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
+  void detectsTooManyRecordComponentsByDefault() {
+    AnalysisResult result = analyzer.analyze(List.of(
+        samplesDir.resolve("../field-rule/TooManyComponentsRecord.java").normalize()));
+
+    assertThat(result.violations())
+        .singleElement()
+        .matches(v -> v.rule().equals("too-many-record-components"));
+  }
+
+  @Test
+  void canExcludeRecordComponentsFromFieldRule() {
+    ObjectCalisthenicsAnalyzer analyzerWithoutRecordComponents = new ObjectCalisthenicsAnalyzer(
+        new RuleSet(50, 2, false, true, 1, true, true, false));
+
+    AnalysisResult result = analyzerWithoutRecordComponents.analyze(List.of(
+        samplesDir.resolve("../field-rule/TooManyComponentsRecord.java").normalize(),
+        samplesDir.resolve("TooManyFieldsClass.java")));
+
+    assertThat(result.violations())
+        .singleElement()
+        .matches(v -> v.rule().equals("too-many-instance-fields"));
+  }
+
+  @Test
+  void suppressesFieldRulePerType() {
+    AnalysisResult result = analyzer.analyze(List.of(
+        samplesDir.resolve("../field-rule/SuppressedFieldsClass.java").normalize(),
+        samplesDir.resolve("../field-rule/SuppressedComponentsRecord.java").normalize()));
+
+    assertThat(result.violations()).isEmpty();
+  }
+
+  @Test
   void detectsElseKeyword() {
     AnalysisResult result = analyzer.analyze(samplesDir.resolve("ElseMethod.java").getParent());
 

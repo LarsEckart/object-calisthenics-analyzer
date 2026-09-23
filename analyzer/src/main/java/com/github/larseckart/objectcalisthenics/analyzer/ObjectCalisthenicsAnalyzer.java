@@ -11,6 +11,7 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.StringLiteralExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -122,13 +123,24 @@ public class ObjectCalisthenicsAnalyzer {
   private void checkType(TypeDeclaration<?> type, Path file, List<Violation> violations) {
     if (type instanceof RecordDeclaration record) {
       checkClassLength(record, file, violations);
-      checkRecordFields(record, file, violations);
+      if (rules.includeRecordComponentsInFieldRule() && !suppressesFieldRule(record)) {
+        checkRecordFields(record, file, violations);
+      }
       checkFirstClassCollections(record, file, violations);
     } else if (type instanceof ClassOrInterfaceDeclaration classDecl) {
       checkClassLength(classDecl, file, violations);
-      checkClassFields(classDecl, file, violations);
+      if (!suppressesFieldRule(classDecl)) {
+        checkClassFields(classDecl, file, violations);
+      }
       checkFirstClassCollections(classDecl, file, violations);
     }
+  }
+
+  private boolean suppressesFieldRule(TypeDeclaration<?> type) {
+    return type.getAnnotations().stream()
+        .filter(annotation -> annotation.getName().getIdentifier().equals("SuppressWarnings"))
+        .flatMap(annotation -> annotation.findAll(StringLiteralExpr.class).stream())
+        .anyMatch(value -> value.asString().equals("calisthenics:fields"));
   }
 
   // Reproduces the Python script's class/record detection, including modifiers

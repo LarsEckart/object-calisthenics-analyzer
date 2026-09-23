@@ -28,7 +28,8 @@ The plugin currently enforces six rules:
 
 1. Keep all classes under 50 meaningful lines. (`maxClassLines`)
 2. No class or record may have more than two instance fields/components.
-   (`maxFieldsPerClass`)
+   (`maxFieldsPerClass`; set `includeRecordComponentsInFieldRule` to `false`
+   to exclude records)
 3. Do not use the `else` keyword. (`forbidElse`)
 4. One level of nesting per method. (`maxMethodNesting`)
 5. No getters or setters by method name. (`forbidGetters`, `forbidSetters`)
@@ -101,6 +102,7 @@ objectCalisthenics {
     rules {
         maxClassLines.set(50)
         maxFieldsPerClass.set(2)
+        includeRecordComponentsInFieldRule.set(true)
         forbidElse.set(true)
         maxMethodNesting.set(1)
         forbidGetters.set(true)
@@ -114,6 +116,12 @@ objectCalisthenics {
     }
 }
 ```
+
+The defaults include record components in the field rule. Set
+`includeRecordComponentsInFieldRule` to `false` when records are primarily
+configuration or data carriers and should not be checked by that rule. To
+suppress an intentional exception on one class or record instead, annotate it
+with `@SuppressWarnings("calisthenics:fields")`.
 
 ### Tasks
 

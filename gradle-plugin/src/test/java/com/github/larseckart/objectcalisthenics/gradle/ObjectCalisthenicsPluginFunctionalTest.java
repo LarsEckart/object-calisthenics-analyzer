@@ -106,6 +106,40 @@ class ObjectCalisthenicsPluginFunctionalTest {
     assertThat(json).contains("\"rule\": \"non-first-class-collection\"");
   }
 
+  @Test
+  void reportTaskCanExcludeRecordComponentsFromFieldRule() throws IOException {
+    writeSettings();
+    Path sourceDir = projectDir.resolve("src/main/java/");
+    Files.createDirectories(sourceDir);
+    Files.writeString(sourceDir.resolve("Configuration.java"), """
+        record Configuration(String host, int port, boolean secure) {
+        }
+        """);
+
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        objectCalisthenics {
+            rules {
+                includeRecordComponentsInFieldRule.set(false)
+            }
+        }
+        """);
+
+    GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments("objectCalisthenicsReport", "--stacktrace")
+        .build();
+
+    String json = Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json"));
+    assertThat(json).contains("\"violations\": 0");
+    assertThat(json).doesNotContain("too-many-record-components");
+  }
+
   private void writeSettings() throws IOException {
     Files.writeString(projectDir.resolve("settings.gradle.kts"), """
         rootProject.name = "functional-test"

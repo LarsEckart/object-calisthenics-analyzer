@@ -27,7 +27,8 @@ The existing measurement script is:
 It outputs `METRIC` lines for five measurable rules:
 
 - class body larger than 50 non-comment, non-blank lines
-- class/record with more than two instance variables
+- class with more than two instance variables; record components are included
+  by default and can be excluded with `includeRecordComponentsInFieldRule`
 - method containing an `else` keyword
 - method with more than one level of nested braces
 - public getter or setter method
@@ -70,6 +71,7 @@ objectCalisthenics {
     rules {
         maxClassLines.set(50)
         maxFieldsPerClass.set(2)
+        includeRecordComponentsInFieldRule.set(true)
         forbidElse.set(true)
         maxMethodNesting.set(1)
         forbidGetters.set(true)
@@ -120,7 +122,7 @@ METRIC getter_setter_methods=4
 | Rule | Relevant AST nodes | Detection idea |
 |---|---|---|
 | Keep all classes < 50 lines | `ClassOrInterfaceDeclaration`, `RecordDeclaration`, `EnumDeclaration` | Compute meaningful lines from source range, ignoring blank lines and line comments |
-| ≤ 2 instance variables per class | `FieldDeclaration` inside a type, `RecordDeclaration.getParameters()` | Count non-static instance fields; count record components |
+| ≤ 2 instance variables per class | `FieldDeclaration` inside a type, `RecordDeclaration.getParameters()` | Count non-static instance fields. Count record components when `includeRecordComponentsInFieldRule` is enabled. Suppress an intentional per-type exception with `@SuppressWarnings("calisthenics:fields")` |
 | Don't use `else` | `IfStmt` | Flag when `getElseStmt().isPresent()` |
 | One level of indentation per method | `MethodDeclaration`, `BlockStmt` inside it | Walk the method body and find the maximum nesting depth of blocks/statements. Depth > 1 is a violation. Loops, ifs, try-with-resources, lambdas and anonymous classes all count as nesting |
 | No getters or setters | `MethodDeclaration` | Detect `public T getX()` / `public boolean isX()` with no args and a body that returns a field; detect `public void setX(T x)` that assigns to a field |
