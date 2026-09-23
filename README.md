@@ -24,7 +24,7 @@ is not supported yet.
 
 ## What it checks
 
-The plugin currently enforces six rules:
+The plugin currently enforces seven rules:
 
 1. Keep all classes under 50 meaningful lines. (`maxClassLines`)
 2. No class or record may have more than two instance fields/components.
@@ -32,18 +32,20 @@ The plugin currently enforces six rules:
    to exclude records)
 3. Do not use the `else` keyword. (`forbidElse`)
 4. One level of nesting per method. (`maxMethodNesting`)
-5. No getters or setters by method name. (`forbidGetters`, `forbidSetters`)
+5. No getters that expose declared state and no setters. (`forbidGetters`,
+   `forbidSetters`) Set `strictGetterNames` to flag every getter-shaped name,
+   including computed queries such as `isReady()`.
 6. A class or record that has a collection or array field may not have any
    other instance fields/components. (`forbidNonFirstClassCollections`)
+7. Do not traverse through collaborators in receiver chains.
+   (`forbidTraversalChains`)
 
 ## What it does not check (yet)
 
-Out of the nine Object Calisthenics rules, three are not implemented yet:
+Out of the nine Object Calisthenics rules, two are not implemented yet:
 
 - **Wrap all primitives and strings.** Telling domain values apart from plain
   configuration or framework types needs project-specific configuration.
-- **One dot per line.** Requires a clear policy on fluent APIs and lawful
-  Demeter violations (for example, `System.out.println`).
 - **Don't abbreviate.** Needs a configurable list of abbreviations per team or
   codebase.
 
@@ -110,6 +112,10 @@ objectCalisthenics {
         forbidGetters.set(true)
         forbidSetters.set(true)
         forbidNonFirstClassCollections.set(true)
+        strictGetterNames.set(false)
+        forbidTraversalChains.set(true)
+        fluentChainMethods.set(setOf("with", "build"))
+        safeChainRoots.set(setOf("System.out", "System.err"))
     }
 
     reports {
@@ -124,6 +130,34 @@ The defaults include record components in the field rule. Set
 configuration or data carriers and should not be checked by that rule. To
 suppress an intentional exception on one class or record instead, annotate it
 with `@SuppressWarnings("calisthenics:fields")`.
+
+### Traversal-chain policy
+
+The traversal rule follows only the receiver side of method calls and field
+accesses. It reports one finding for each maximal receiver chain with more than
+one step. It does not count independent calls in arguments as one chain:
+
+- `service.execute()` and `a.b(c.d())` are allowed.
+- `customer().address()` and `order.customer.address` are reported.
+- In `a.b(c.d().e())`, only `c.d().e()` is reported.
+- `this.service.execute()` is equivalent to `service.execute()`.
+- Parentheses, casts, and array access do not hide a receiver chain.
+
+`fluentChainMethods` names methods whose intermediate results continue the
+same fluent or value operation. For example, configuring `minus` and `times`
+allows `vector.minus(other).times(scale).dot(axis)`, but still reports
+`ball.position().minus(other)` because `position()` crosses a collaborator
+boundary. Method-name exceptions apply globally because the analyzer does not
+resolve types. `safeChainRoots` contains exact dotted starting receivers;
+`System.out` and `System.err` (including their `java.lang` forms) are safe by
+default.
+
+The rule is disabled by default. It deliberately does not infer whether
+`ball.motion().relativeTo(...)` is a good whole-value collaboration while
+`ball.position().minus(...)` is state traversal: those expressions have the
+same AST shape without type and domain knowledge. Splitting a chain into local
+variables can also hide it, so findings are coaching prompts rather than proof
+of a design defect.
 
 ### Tasks
 
@@ -172,7 +206,8 @@ path can be changed with `baselineFile`; it defaults to
     "methods_with_else": 0,
     "methods_over_nested": 0,
     "getter_setter_methods": 0,
-    "non_first_class_collections": 0
+    "non_first_class_collections": 0,
+    "traversal_chains": 0
   },
   "details": [
     {

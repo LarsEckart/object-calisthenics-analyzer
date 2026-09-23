@@ -17,7 +17,11 @@ final class RuleSetFactory {
         rules.getMaxMethodNesting().get(),
         rules.getForbidGetters().get(),
         rules.getForbidSetters().get(),
-        rules.getForbidNonFirstClassCollections().get()
+        rules.getForbidNonFirstClassCollections().get(),
+        rules.getStrictGetterNames().get(),
+        rules.getForbidTraversalChains().get(),
+        rules.getFluentChainMethods().get(),
+        rules.getSafeChainRoots().get()
     );
   }
 }

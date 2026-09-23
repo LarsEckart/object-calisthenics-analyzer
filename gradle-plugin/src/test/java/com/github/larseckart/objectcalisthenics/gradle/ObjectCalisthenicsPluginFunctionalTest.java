@@ -92,8 +92,10 @@ class ObjectCalisthenicsPluginFunctionalTest {
 
     Files.writeString(projectDir.resolve("src/main/java/NewViolation.java"), """
         public class NewViolation {
+          private int value;
+
           public int getValue() {
-            return 1;
+            return value;
           }
         }
         """);
@@ -224,6 +226,46 @@ class ObjectCalisthenicsPluginFunctionalTest {
     String json = Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json"));
     assertThat(json).contains("\"violations\": 0");
     assertThat(json).doesNotContain("too-many-record-components");
+  }
+
+  @Test
+  void reportTaskAppliesGetterAndTraversalConfiguration() throws IOException {
+    writeSettings();
+    Path sourceDir = projectDir.resolve("src/main/java/");
+    Files.createDirectories(sourceDir);
+    Files.writeString(sourceDir.resolve("ConfiguredRules.java"), """
+        class ConfiguredRules {
+          public boolean isReady() { return calculateReadiness(); }
+          public Object address() { return customer().address(); }
+        }
+        """);
+
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        objectCalisthenics {
+            rules {
+                strictGetterNames.set(true)
+                forbidTraversalChains.set(true)
+                fluentChainMethods.set(setOf("with", "build"))
+                safeChainRoots.set(setOf("System.out"))
+            }
+        }
+        """);
+
+    GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments("objectCalisthenicsReport", "--stacktrace")
+        .build();
+
+    String json = Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json"));
+    assertThat(json).contains("\"getter_setter_methods\": 1");
+    assertThat(json).contains("\"traversal_chains\": 1");
+    assertThat(json).contains("\"rule\": \"traversal-chain\"");
   }
 
   private void writeSettings() throws IOException {
