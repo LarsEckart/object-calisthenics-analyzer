@@ -166,6 +166,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           declarationLine,
           "class-too-long",
+          type.getNameAsString(),
           "%s has %d meaningful lines (limit %d)".formatted(
               type.getNameAsString(), meaningfulLines, rules.maxClassLines())
       ));
@@ -219,6 +220,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           type.getBegin().map(p -> p.line).orElse(0),
           "too-many-instance-fields",
+          type.getNameAsString(),
           "%s has %d instance fields (limit %d)".formatted(
               type.getNameAsString(), instanceFields, rules.maxFieldsPerClass())
       ));
@@ -232,6 +234,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           record.getBegin().map(p -> p.line).orElse(0),
           "too-many-record-components",
+          record.getNameAsString(),
           "%s has %d record components (limit %d)".formatted(
               record.getNameAsString(), components, rules.maxFieldsPerClass())
       ));
@@ -267,6 +270,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           type.getBegin().map(p -> p.line).orElse(0),
           "non-first-class-collection",
+          type.getNameAsString(),
           "%s is not a first-class collection: %d collection field(s) and %d other instance field(s)".formatted(
               type.getNameAsString(), collectionFields, otherFields)
       ));
@@ -304,6 +308,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           method.getBegin().map(p -> p.line).orElse(0),
           "else-used",
+          method.getNameAsString(),
           "Method '%s' uses the else keyword".formatted(method.getNameAsString())
       ));
     }
@@ -315,6 +320,7 @@ public class ObjectCalisthenicsAnalyzer {
             file,
             method.getBegin().map(p -> p.line).orElse(0),
             "method-over-nested",
+            method.getNameAsString(),
             "Method '%s' nests %d levels deep (limit %d)".formatted(
                 method.getNameAsString(), depth, rules.maxMethodNesting())
         ));
@@ -326,6 +332,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           method.getBegin().map(p -> p.line).orElse(0),
           "getter",
+          method.getNameAsString(),
           "Method '%s' looks like a getter".formatted(method.getNameAsString())
       ));
     }
@@ -335,6 +342,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           method.getBegin().map(p -> p.line).orElse(0),
           "setter",
+          method.getNameAsString(),
           "Method '%s' looks like a setter".formatted(method.getNameAsString())
       ));
     }

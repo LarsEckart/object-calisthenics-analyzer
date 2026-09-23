@@ -6,10 +6,13 @@ import com.github.larseckart.objectcalisthenics.analyzer.RuleSet;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
@@ -37,6 +40,19 @@ public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
   @Input
   public abstract Property<Boolean> getConsoleSummary();
 
+  @Internal
+  public abstract RegularFileProperty getBaselineFile();
+
+  @InputFiles
+  @PathSensitive(PathSensitivity.RELATIVE)
+  public abstract ConfigurableFileCollection getBaselineFiles();
+
+  @Internal
+  public abstract DirectoryProperty getProjectDirectory();
+
+  @Input
+  public abstract Property<Boolean> getIgnoreFailures();
+
   @TaskAction
   public void check() {
     RuleSet ruleSet = RuleSetFactory.from(getRules());
@@ -53,9 +69,33 @@ public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
       MetricsPrinter.print(result, System.out);
     }
 
-    if (!result.violations().isEmpty()) {
+    Baseline baseline = Baseline.load(
+        getBaselineFile().get().getAsFile().toPath(),
+        getProjectDirectory().get().getAsFile().toPath()
+    );
+    List<Baseline.Entry> current = baseline.entriesFor(result.violations());
+    List<Baseline.Entry> newViolations = baseline.newEntries(current);
+    List<Baseline.Entry> staleEntries = baseline.staleEntries(current);
+
+    if (!staleEntries.isEmpty()) {
+      getLogger().warn(
+          "Object Calisthenics baseline has {} stale entr{}; regenerate it with objectCalisthenicsBaseline.",
+          staleEntries.size(),
+          staleEntries.size() == 1 ? "y" : "ies"
+      );
+    }
+
+    if (!newViolations.isEmpty() && !getIgnoreFailures().get()) {
       throw new GradleException(
-          "Object Calisthenics violations found: " + result.totalViolations());
+          "Object Calisthenics violations found: " + newViolations.size()
+              + " new, " + (current.size() - newViolations.size()) + " baselined");
+    }
+
+    if (!newViolations.isEmpty()) {
+      getLogger().warn(
+          "Object Calisthenics violations found: {} new violation(s); ignoring failures as configured.",
+          newViolations.size()
+      );
     }
   }
 }

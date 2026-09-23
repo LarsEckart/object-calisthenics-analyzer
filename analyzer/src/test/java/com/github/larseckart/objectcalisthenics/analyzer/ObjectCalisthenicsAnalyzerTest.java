@@ -29,6 +29,7 @@ class ObjectCalisthenicsAnalyzerTest {
         .toList();
 
     assertThat(classTooLong).hasSize(1);
+    assertThat(classTooLong.get(0).subject()).isEqualTo("TooLongClass");
     assertThat(classTooLong.get(0).message()).contains("TooLongClass");
   }
 
@@ -95,7 +96,7 @@ class ObjectCalisthenicsAnalyzerTest {
     AnalysisResult result = analyzer.analyze(samplesDir.resolve("ElseMethod.java").getParent());
 
     assertThat(result.violations())
-        .anyMatch(v -> v.rule().equals("else-used") && v.message().contains("sign"));
+        .anyMatch(v -> v.rule().equals("else-used") && v.subject().equals("sign"));
   }
 
   @Test

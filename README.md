@@ -98,6 +98,8 @@ from the signing key.
 ```kotlin
 objectCalisthenics {
     sourceSet.set(project.sourceSets["main"])
+    baselineFile.set(layout.projectDirectory.file("object-calisthenics-baseline.txt"))
+    ignoreFailures.set(false)
 
     rules {
         maxClassLines.set(50)
@@ -126,9 +128,38 @@ with `@SuppressWarnings("calisthenics:fields")`.
 ### Tasks
 
 - `objectCalisthenicsCheck` – analyses source and fails the build if any
-  violation is found.
+  violation not in the baseline is found (unless `ignoreFailures` is enabled).
+- `objectCalisthenicsBaseline` – writes the current violations to the configured
+  baseline file.
 - `objectCalisthenicsReport` – writes a JSON report without failing.
 - The `check` lifecycle task depends on `objectCalisthenicsCheck`.
+
+### Adopting on an existing codebase
+
+To start enforcing the rules without first fixing every existing finding, run:
+
+```shell
+./gradlew objectCalisthenicsBaseline
+```
+
+This creates `object-calisthenics-baseline.txt` in the project directory.
+Commit that file. Each entry is identified by its project-relative source file,
+rule, and class or method name, so moving code within the same file does not
+invalidate it. Future `check` runs fail only for new findings. When findings
+are fixed, the check reports stale entries; rerun the baseline task and commit
+the smaller file.
+
+For a reporting-only rollout, configure:
+
+```kotlin
+objectCalisthenics {
+    ignoreFailures.set(true)
+}
+```
+
+The check then reports all findings but does not fail the build. The baseline
+path can be changed with `baselineFile`; it defaults to
+`object-calisthenics-baseline.txt` in the project directory.
 
 ### JSON report format
 
@@ -148,6 +179,7 @@ with `@SuppressWarnings("calisthenics:fields")`.
       "file": "src/main/java/org/example/ApiResource.java",
       "line": 42,
       "rule": "class-too-long",
+      "subject": "ApiResource",
       "message": "ApiResource has 943 meaningful lines (limit 50)",
       "advice": {
         "principle": "Keep each class focused on one responsibility.",

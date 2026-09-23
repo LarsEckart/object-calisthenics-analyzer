@@ -28,6 +28,9 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
     extension.getReports().getJson().convention(
         project.getLayout().getBuildDirectory().file("reports/calisthenics/calisthenics.json")
     );
+    extension.getBaselineFile().convention(
+        project.getLayout().getProjectDirectory().file("object-calisthenics-baseline.txt")
+    );
 
     project.getPlugins().withType(JavaPlugin.class, javaPlugin -> {
       SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
@@ -41,6 +44,10 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
           task.getSourceFiles().setFrom(extension.getSourceSet().map(this::allJava));
           linkRules(task.getRules(), extension.getRules());
           task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
+          task.getBaselineFile().set(extension.getBaselineFile());
+          task.getBaselineFiles().setFrom(extension.getBaselineFile());
+          task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
+          task.getIgnoreFailures().set(extension.getIgnoreFailures());
         });
 
     TaskProvider<ObjectCalisthenicsReportTask> reportTask = project.getTasks()
@@ -52,6 +59,19 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
           task.getJson().set(extension.getReports().getJson());
           task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
         });
+
+    project.getTasks().register(
+        "objectCalisthenicsBaseline",
+        ObjectCalisthenicsBaselineTask.class,
+        task -> {
+          task.setGroup("Verification");
+          task.setDescription("Creates an Object Calisthenics baseline from current violations.");
+          task.getSourceFiles().setFrom(extension.getSourceSet().map(this::allJava));
+          linkRules(task.getRules(), extension.getRules());
+          task.getBaselineFile().set(extension.getBaselineFile());
+          task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
+        }
+    );
 
     project.getTasks().named("check").configure(check -> check.dependsOn(checkTask));
   }
