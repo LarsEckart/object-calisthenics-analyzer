@@ -3,7 +3,7 @@
 A Java 17+ analyzer and Gradle plugin that enforce configurable Object Calisthenics rules.
 
 - `analyzer/` contains the JavaParser-based analysis engine and CLI.
-- `gradle-plugin/` exposes the analyzer as the `com.github.larseckart.object-calisthenics` Gradle plugin.
+- `gradle-plugin/` exposes the analyzer as the `com.larseckart.object-calisthenics` Gradle plugin.
 
 Build and test from the repository root with `./gradlew check`.
 

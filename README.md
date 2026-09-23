@@ -52,7 +52,7 @@ After the first release, install the plugin from the Gradle Plugin Portal:
 
 ```kotlin
 plugins {
-    id("com.github.larseckart.object-calisthenics") version "<released-version>"
+    id("com.larseckart.object-calisthenics") version "<released-version>"
 }
 
 repositories {
@@ -74,7 +74,7 @@ pluginManagement {
 ```kotlin
 // build.gradle.kts in the consumer project
 plugins {
-    id("com.github.larseckart.object-calisthenics")
+    id("com.larseckart.object-calisthenics")
 }
 ```
 
@@ -87,7 +87,7 @@ such as `v0.1.0`. The release workflow
 runs the tests, publishes the signed analyzer library to Maven Central, waits
 for it to become available, then publishes the plugin to the Gradle Plugin
 Portal and tests it in a fresh build. The plugin ID stays
-`com.github.larseckart.object-calisthenics`.
+`com.larseckart.object-calisthenics`.
 
 Before the first release, confirm ownership of the `com.larseckart` Maven
 Central namespace and the plugin ID on the Plugin Portal. Set these GitHub

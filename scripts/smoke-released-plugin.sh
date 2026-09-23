@@ -19,7 +19,7 @@ EOF
 cat > "$project_dir/build.gradle.kts" <<EOF
 plugins {
     java
-    id("com.github.larseckart.object-calisthenics") version "$version"
+    id("com.larseckart.object-calisthenics") version "$version"
 }
 
 repositories {

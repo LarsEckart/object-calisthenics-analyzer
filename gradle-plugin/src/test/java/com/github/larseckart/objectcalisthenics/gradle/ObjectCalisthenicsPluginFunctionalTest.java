@@ -25,7 +25,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
     Files.writeString(buildScript, """
         plugins {
             java
-            id("com.github.larseckart.object-calisthenics")
+            id("com.larseckart.object-calisthenics")
         }
         """);
 
@@ -49,7 +49,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
     Files.writeString(buildScript, """
         plugins {
             java
-            id("com.github.larseckart.object-calisthenics")
+            id("com.larseckart.object-calisthenics")
         }
         """);
 
@@ -85,7 +85,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
     Files.writeString(projectDir.resolve("build.gradle.kts"), """
         plugins {
             java
-            id("com.github.larseckart.object-calisthenics")
+            id("com.larseckart.object-calisthenics")
         }
 
         objectCalisthenics {
