@@ -156,6 +156,46 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
+  void excludedResponseDoesNotCreateStaleBaselineEntry() throws IOException {
+    writeSettings();
+    writeJavaSource("ExcludedResponse.java", """
+        class ExcludedResponse {
+          private int first;
+          private int second;
+          private int third;
+
+          public int getFirst() {
+            return first;
+          }
+        }
+        """);
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        objectCalisthenics {
+            exclusions {
+                classNamePatterns.add(".*Response$")
+            }
+        }
+        """);
+
+    BuildResult baselineResult = runner("objectCalisthenicsBaseline").build();
+    assertThat(baselineResult.getOutput()).contains("Wrote 0 Object Calisthenics baseline entries");
+
+    Path baseline = projectDir.resolve("object-calisthenics-baseline.txt");
+    assertThat(baseline).exists();
+    assertThat(Files.readString(baseline)).doesNotContain("ExcludedResponse");
+
+    BuildResult checkResult = runner("objectCalisthenicsCheck").build();
+    assertThat(checkResult.getOutput())
+        .contains("violations=0")
+        .doesNotContain("stale");
+  }
+
+  @Test
   void reportTaskWritesJsonWithoutFailing() throws IOException {
     writeSettings();
     writeBadJavaSource();
