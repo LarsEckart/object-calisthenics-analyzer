@@ -35,10 +35,12 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Analyzes Java source files for Object Calisthenics violations.
@@ -50,6 +52,7 @@ import java.util.Set;
 public class ObjectCalisthenicsAnalyzer {
 
   private final RuleSet rules;
+  private final List<ClassNamePattern> classNamePatterns;
   private final ParserConfiguration parserConfiguration;
 
   // Simple name matching for JDK collection types and their common implementations.
@@ -78,10 +81,20 @@ public class ObjectCalisthenicsAnalyzer {
   private record TraversalChain(String root, List<ChainStep> steps) {
   }
 
-  public ObjectCalisthenicsAnalyzer(RuleSet rules) {
+  private record ClassNamePattern(String source, Pattern pattern) {
+  }
+
+  public ObjectCalisthenicsAnalyzer(RuleSet rules, List<String> classNamePatterns) {
     this.rules = rules;
+    this.classNamePatterns = classNamePatterns.stream()
+        .map(pattern -> new ClassNamePattern(pattern, Pattern.compile(pattern)))
+        .toList();
     this.parserConfiguration = new ParserConfiguration()
         .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_26);
+  }
+
+  public ObjectCalisthenicsAnalyzer(RuleSet rules) {
+    this(rules, List.of());
   }
 
   public ObjectCalisthenicsAnalyzer() {
@@ -93,16 +106,17 @@ public class ObjectCalisthenicsAnalyzer {
    */
   public AnalysisResult analyze(Path sourceRoot) {
     SourceRoot root = new SourceRoot(sourceRoot, parserConfiguration);
-    List<Violation> violations = new ArrayList<>();
+    List<Violation> violations = Collections.synchronizedList(new ArrayList<>());
+    List<ExcludedClass> excludedClasses = Collections.synchronizedList(new ArrayList<>());
 
     root.tryToParseParallelized().forEach(result -> {
       if (result.isSuccessful() && result.getResult().isPresent()) {
         CompilationUnit unit = result.getResult().get();
-        checkCompilationUnit(unit, violations);
+        checkCompilationUnit(unit, violations, excludedClasses);
       }
     });
 
-    return new AnalysisResult(violations);
+    return new AnalysisResult(violations, excludedClasses);
   }
 
   /**
@@ -111,35 +125,63 @@ public class ObjectCalisthenicsAnalyzer {
   public AnalysisResult analyze(List<Path> files) {
     JavaParser parser = new JavaParser(parserConfiguration);
     List<Violation> violations = new ArrayList<>();
+    List<ExcludedClass> excludedClasses = new ArrayList<>();
 
     for (Path file : files) {
       try {
-        parser.parse(file).getResult().ifPresent(unit -> checkCompilationUnit(unit, violations));
+        parser.parse(file).getResult().ifPresent(unit -> checkCompilationUnit(unit, violations, excludedClasses));
       } catch (IOException e) {
         throw new UncheckedIOException("Failed to parse " + file, e);
       }
     }
 
-    return new AnalysisResult(violations);
+    return new AnalysisResult(violations, excludedClasses);
   }
 
-  private void checkCompilationUnit(CompilationUnit unit, List<Violation> violations) {
+  private void checkCompilationUnit(
+      CompilationUnit unit,
+      List<Violation> violations,
+      List<ExcludedClass> excludedClasses
+  ) {
     Path file = unit.getStorage()
         .map(CompilationUnit.Storage::getPath)
         .orElseThrow(() -> new IllegalStateException("Parsed compilation unit has no file path"));
 
     for (TypeDeclaration<?> type : unit.getTypes()) {
-      checkType(type, file, violations);
-      for (BodyDeclaration<?> member : type.getMembers()) {
-        if (member instanceof MethodDeclaration method) {
-          checkMethod(method, file, violations);
-        }
-      }
+      checkTypeAndMembers(type, file, violations, excludedClasses);
     }
 
     if (rules.forbidTraversalChains()) {
       checkTraversalChains(unit, file, violations);
     }
+  }
+
+  private void checkTypeAndMembers(
+      TypeDeclaration<?> type,
+      Path file,
+      List<Violation> violations,
+      List<ExcludedClass> excludedClasses
+  ) {
+    List<String> matchedPatterns = matchingPatterns(type.getNameAsString());
+    if (matchedPatterns.isEmpty()) {
+      checkType(type, file, violations);
+      for (BodyDeclaration<?> member : type.getMembers()) {
+        if (member instanceof MethodDeclaration method) {
+          checkMethod(method, file, violations);
+        } else if (member instanceof TypeDeclaration<?> nestedType) {
+          checkTypeAndMembers(nestedType, file, violations, excludedClasses);
+        }
+      }
+    } else {
+      excludedClasses.add(new ExcludedClass(file, type.getNameAsString(), matchedPatterns));
+    }
+  }
+
+  private List<String> matchingPatterns(String simpleClassName) {
+    return classNamePatterns.stream()
+        .filter(pattern -> pattern.pattern().matcher(simpleClassName).matches())
+        .map(ClassNamePattern::source)
+        .toList();
   }
 
   private void checkType(TypeDeclaration<?> type, Path file, List<Violation> violations) {

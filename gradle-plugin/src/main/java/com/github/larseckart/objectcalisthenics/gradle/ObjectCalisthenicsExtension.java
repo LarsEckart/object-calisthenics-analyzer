@@ -17,6 +17,7 @@ public class ObjectCalisthenicsExtension {
   private final RegularFileProperty baselineFile;
   private final Property<Boolean> ignoreFailures;
   private final ObjectCalisthenicsRules rules;
+  private final ObjectCalisthenicsExclusions exclusions;
   private final ObjectCalisthenicsReports reports;
 
   @Inject
@@ -25,6 +26,7 @@ public class ObjectCalisthenicsExtension {
     this.baselineFile = objects.fileProperty();
     this.ignoreFailures = objects.property(Boolean.class).convention(false);
     this.rules = objects.newInstance(ObjectCalisthenicsRules.class);
+    this.exclusions = objects.newInstance(ObjectCalisthenicsExclusions.class);
     this.reports = objects.newInstance(ObjectCalisthenicsReports.class);
   }
 
@@ -44,12 +46,20 @@ public class ObjectCalisthenicsExtension {
     return rules;
   }
 
+  public ObjectCalisthenicsExclusions getExclusions() {
+    return exclusions;
+  }
+
   public ObjectCalisthenicsReports getReports() {
     return reports;
   }
 
   public void rules(Action<? super ObjectCalisthenicsRules> action) {
     action.execute(rules);
+  }
+
+  public void exclusions(Action<? super ObjectCalisthenicsExclusions> action) {
+    action.execute(exclusions);
   }
 
   public void reports(Action<? super ObjectCalisthenicsReports> action) {

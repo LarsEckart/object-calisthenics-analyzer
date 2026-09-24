@@ -7,7 +7,16 @@ import java.util.stream.Collectors;
 /**
  * The outcome of an analysis run.
  */
-public record AnalysisResult(List<Violation> violations) {
+public record AnalysisResult(List<Violation> violations, List<ExcludedClass> excludedClasses) {
+
+  public AnalysisResult {
+    violations = List.copyOf(violations);
+    excludedClasses = List.copyOf(excludedClasses);
+  }
+
+  public AnalysisResult(List<Violation> violations) {
+    this(violations, List.of());
+  }
 
   public int totalViolations() {
     return violations.size();

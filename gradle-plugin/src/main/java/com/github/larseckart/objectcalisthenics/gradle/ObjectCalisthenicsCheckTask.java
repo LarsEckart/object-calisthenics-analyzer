@@ -8,6 +8,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
@@ -38,6 +39,9 @@ public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
   public abstract ObjectCalisthenicsRules getRules();
 
   @Input
+  public abstract ListProperty<String> getClassNamePatterns();
+
+  @Input
   public abstract Property<Boolean> getConsoleSummary();
 
   @Internal
@@ -56,7 +60,10 @@ public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
   @TaskAction
   public void check() {
     RuleSet ruleSet = RuleSetFactory.from(getRules());
-    ObjectCalisthenicsAnalyzer analyzer = new ObjectCalisthenicsAnalyzer(ruleSet);
+    ObjectCalisthenicsAnalyzer analyzer = new ObjectCalisthenicsAnalyzer(
+        ruleSet,
+        getClassNamePatterns().get()
+    );
 
     List<Path> files = getSourceFiles().getFiles().stream()
         .map(File::toPath)

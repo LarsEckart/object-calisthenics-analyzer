@@ -43,6 +43,7 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
           task.setDescription("Checks the project for Object Calisthenics violations.");
           task.getSourceFiles().setFrom(extension.getSourceSet().map(this::allJava));
           linkRules(task.getRules(), extension.getRules());
+          task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
           task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
           task.getBaselineFile().set(extension.getBaselineFile());
           task.getBaselineFiles().setFrom(extension.getBaselineFile());
@@ -56,6 +57,7 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
           task.setDescription("Writes an Object Calisthenics JSON report.");
           task.getSourceFiles().setFrom(extension.getSourceSet().map(this::allJava));
           linkRules(task.getRules(), extension.getRules());
+          task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
           task.getJson().set(extension.getReports().getJson());
           task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
         });

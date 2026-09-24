@@ -6,6 +6,7 @@ import com.github.larseckart.objectcalisthenics.analyzer.RuleSet;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
@@ -38,6 +39,9 @@ public abstract class ObjectCalisthenicsReportTask extends DefaultTask {
   @Nested
   public abstract ObjectCalisthenicsRules getRules();
 
+  @Input
+  public abstract ListProperty<String> getClassNamePatterns();
+
   @OutputFile
   public abstract RegularFileProperty getJson();
 
@@ -47,7 +51,10 @@ public abstract class ObjectCalisthenicsReportTask extends DefaultTask {
   @TaskAction
   public void report() {
     RuleSet ruleSet = RuleSetFactory.from(getRules());
-    ObjectCalisthenicsAnalyzer analyzer = new ObjectCalisthenicsAnalyzer(ruleSet);
+    ObjectCalisthenicsAnalyzer analyzer = new ObjectCalisthenicsAnalyzer(
+        ruleSet,
+        getClassNamePatterns().get()
+    );
 
     List<Path> files = getSourceFiles().getFiles().stream()
         .map(File::toPath)

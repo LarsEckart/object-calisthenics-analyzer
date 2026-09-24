@@ -57,7 +57,7 @@ the [Gradle Plugin Portal](https://plugins.gradle.org/plugin/com.larseckart.obje
 ```kotlin
 plugins {
     java
-    id("com.larseckart.object-calisthenics") version "0.1.1"
+    id("com.larseckart.object-calisthenics") version "0.2.0"
 }
 
 repositories {
@@ -67,7 +67,7 @@ repositories {
 
 The analyzer library is also available on
 [Maven Central](https://central.sonatype.com/artifact/com.larseckart/object-calisthenics-analyzer)
-as `com.larseckart:object-calisthenics-analyzer:0.1.1`. See
+as `com.larseckart:object-calisthenics-analyzer:0.2.0`. See
 [releases](https://github.com/LarsEckart/object-calisthenics-analyzer/releases)
 for newer versions.
 
@@ -76,7 +76,7 @@ for newer versions.
 Before making a release, run **Actions → Release → Run workflow** on `main`
 and check that the `validate` job passes. This signs and checks the Maven
 artifacts without publishing them. Then publish a GitHub release with a tag
-such as `v0.1.2`. The release workflow runs the tests, publishes the signed
+such as `v0.2.0`. The release workflow runs the tests, publishes the signed
 analyzer library to Maven Central, waits for it to become available, then
 publishes the plugin to the Gradle Plugin Portal and tests it in a fresh build.
 The plugin ID stays `com.larseckart.object-calisthenics`.
@@ -102,6 +102,11 @@ objectCalisthenics {
     sourceSet.set(project.sourceSets["main"])
     baselineFile.set(layout.projectDirectory.file("object-calisthenics-baseline.txt"))
     ignoreFailures.set(false)
+
+    exclusions {
+        // Regular expressions match simple class and record names.
+        classNamePatterns.add(".*Response$")
+    }
 
     rules {
         maxClassLines.set(50)
@@ -130,6 +135,10 @@ The defaults include record components in the field rule. Set
 configuration or data carriers and should not be checked by that rule. To
 suppress an intentional exception on one class or record instead, annotate it
 with `@SuppressWarnings("calisthenics:fields")`.
+
+`classNamePatterns` uses Java regular expressions and matches each whole simple
+class name. It applies to nested classes and records too. A matching type skips
+all checks; the JSON report lists the type and every pattern that matched it.
 
 ### Traversal-chain policy
 
@@ -209,6 +218,13 @@ path can be changed with `baselineFile`; it defaults to
     "non_first_class_collections": 0,
     "traversal_chains": 0
   },
+  "excluded_classes": [
+    {
+      "file": "src/main/java/org/example/JoinMatchResponse.java",
+      "class_name": "JoinMatchResponse",
+      "matched_patterns": [".*Response$"]
+    }
+  ],
   "details": [
     {
       "file": "src/main/java/org/example/ApiResource.java",

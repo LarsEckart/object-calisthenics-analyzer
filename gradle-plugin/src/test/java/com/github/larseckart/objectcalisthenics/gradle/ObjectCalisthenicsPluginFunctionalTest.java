@@ -268,6 +268,179 @@ class ObjectCalisthenicsPluginFunctionalTest {
     assertThat(json).contains("\"rule\": \"traversal-chain\"");
   }
 
+  @Test
+  void exclusionsIgnoreMatchingClassesAndKeepNonMatchingFailures() throws IOException {
+    writeSettings();
+    writeJavaSource("ApiTypes.java", """
+        class JoinMatchResponse {
+          private int first;
+          private int second;
+          private int third;
+
+          public int getFirst() {
+            return first;
+          }
+        }
+
+        class JoinMatchCommand {
+          private int first;
+          private int second;
+          private int third;
+        }
+        """);
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        objectCalisthenics {
+            exclusions {
+                classNamePatterns.add(".*Response$")
+            }
+        }
+        """);
+
+    BuildResult check = GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments("objectCalisthenicsCheck", "--stacktrace")
+        .buildAndFail();
+
+    assertThat(check.getOutput()).contains("Object Calisthenics violations found");
+    assertThat(check.getOutput()).contains("JoinMatchCommand has 3 instance fields");
+
+    GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments("objectCalisthenicsReport", "--stacktrace")
+        .build();
+
+    String json = Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json"));
+    assertThat(json).contains("\"classes_over_2_fields\": 1");
+    assertThat(json).contains("\"class_name\": \"JoinMatchResponse\"");
+    assertThat(json).contains("\"matched_patterns\": [\".*Response$\"]");
+    assertThat(details(json)).doesNotContain("JoinMatchResponse");
+    assertThat(details(json)).contains("JoinMatchCommand");
+  }
+
+  @Test
+  void canCombineSeveralClassNamePatterns() throws IOException {
+    writeSettings();
+    writeJavaSource("Types.java", """
+        class ApiResponse {
+          private int first;
+          private int second;
+          private int third;
+        }
+
+        class GeneratedModel {
+          private int first;
+          private int second;
+          private int third;
+        }
+
+        class ActiveRequest {
+          private int first;
+          private int second;
+          private int third;
+        }
+        """);
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        objectCalisthenics {
+            exclusions {
+                classNamePatterns.add(".*Response$")
+                classNamePatterns.add("Api.*")
+                classNamePatterns.add(".*Model$")
+            }
+        }
+        """);
+
+    GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments("objectCalisthenicsReport", "--stacktrace")
+        .build();
+
+    String json = Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json"));
+    assertThat(json).contains("\"class_name\": \"ApiResponse\"");
+    assertThat(json).contains("\"class_name\": \"GeneratedModel\"");
+    assertThat(json).contains("\"matched_patterns\": [\".*Response$\", \"Api.*\"]");
+    assertThat(json).contains("\"matched_patterns\": [\".*Model$\"]");
+    assertThat(details(json)).contains("ActiveRequest");
+    assertThat(details(json)).doesNotContain("ApiResponse", "GeneratedModel");
+  }
+
+  @Test
+  void exclusionsMatchNestedClassesAndRecordsBySimpleName() throws IOException {
+    writeSettings();
+    writeJavaSource("NestedTypes.java", """
+        class Container {
+          static class NestedResponse {
+            private int first;
+            private int second;
+            private int third;
+
+            public int getFirst() {
+              return first;
+            }
+          }
+
+          static class NestedRequest {
+            private int first;
+            private int second;
+            private int third;
+          }
+        }
+
+        record ReceiptResponse(int first, int second, int third) {
+        }
+
+        record ReceiptRequest(int first, int second, int third) {
+        }
+        """);
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        objectCalisthenics {
+            exclusions {
+                classNamePatterns.add(".*Response$")
+            }
+        }
+        """);
+
+    GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments("objectCalisthenicsReport", "--stacktrace")
+        .build();
+
+    String json = Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json"));
+    assertThat(json).contains("\"class_name\": \"NestedResponse\"");
+    assertThat(json).contains("\"class_name\": \"ReceiptResponse\"");
+    assertThat(json).contains("\"classes_over_2_fields\": 2");
+    assertThat(details(json)).contains("NestedRequest", "ReceiptRequest");
+    assertThat(details(json)).doesNotContain("NestedResponse", "ReceiptResponse");
+  }
+
+  private static String details(String json) {
+    return json.substring(json.indexOf("\"details\":"));
+  }
+
+  private void writeJavaSource(String fileName, String source) throws IOException {
+    Path sourceDir = projectDir.resolve("src/main/java/");
+    Files.createDirectories(sourceDir);
+    Files.writeString(sourceDir.resolve(fileName), source);
+  }
+
   private void writeSettings() throws IOException {
     Files.writeString(projectDir.resolve("settings.gradle.kts"), """
         rootProject.name = "functional-test"

@@ -2,6 +2,7 @@ package com.github.larseckart.objectcalisthenics.gradle;
 
 import com.github.larseckart.objectcalisthenics.analyzer.Advice;
 import com.github.larseckart.objectcalisthenics.analyzer.AnalysisResult;
+import com.github.larseckart.objectcalisthenics.analyzer.ExcludedClass;
 import com.github.larseckart.objectcalisthenics.analyzer.Violation;
 
 import java.io.IOException;
@@ -50,6 +51,9 @@ final class JsonReportWriter {
         .append(count(violations, "traversal-chain"))
         .append("\n");
     sb.append("  },\n");
+    sb.append("  \"excluded_classes\": [\n");
+    appendExcludedClasses(sb, result.excludedClasses());
+    sb.append("  ],\n");
     sb.append("  \"details\": [\n");
     for (int i = 0; i < violations.size(); i++) {
       Violation v = violations.get(i);
@@ -84,6 +88,28 @@ final class JsonReportWriter {
     sb.append("],\n");
     sb.append("        \"caution\": \"").append(jsonEscape(advice.caution())).append("\"\n");
     sb.append("      }\n");
+  }
+
+  private static void appendExcludedClasses(StringBuilder sb, List<ExcludedClass> excludedClasses) {
+    for (int i = 0; i < excludedClasses.size(); i++) {
+      ExcludedClass excludedClass = excludedClasses.get(i);
+      sb.append("    {\n");
+      sb.append("      \"file\": \"").append(jsonEscape(excludedClass.file().toString())).append("\",\n");
+      sb.append("      \"class_name\": \"").append(jsonEscape(excludedClass.className())).append("\",\n");
+      sb.append("      \"matched_patterns\": [");
+      for (int j = 0; j < excludedClass.matchedPatterns().size(); j++) {
+        if (j > 0) {
+          sb.append(", ");
+        }
+        sb.append("\"").append(jsonEscape(excludedClass.matchedPatterns().get(j))).append("\"");
+      }
+      sb.append("]\n");
+      sb.append("    }");
+      if (i < excludedClasses.size() - 1) {
+        sb.append(",");
+      }
+      sb.append("\n");
+    }
   }
 
   private static long count(List<Violation> violations, String rule) {

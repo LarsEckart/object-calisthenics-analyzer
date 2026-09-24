@@ -2,7 +2,7 @@ plugins {
     base
 }
 
-val releaseVersion = providers.gradleProperty("releaseVersion").orElse("0.1.0-SNAPSHOT")
+val releaseVersion = providers.gradleProperty("releaseVersion").orElse("0.2.0-SNAPSHOT")
 
 allprojects {
     group = "com.larseckart"
