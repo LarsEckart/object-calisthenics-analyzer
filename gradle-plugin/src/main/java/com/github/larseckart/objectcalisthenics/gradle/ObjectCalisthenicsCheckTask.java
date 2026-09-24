@@ -73,7 +73,11 @@ public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
     AnalysisResult result = analyzer.analyze(files);
 
     if (getConsoleSummary().get()) {
-      MetricsPrinter.print(result, System.out);
+      MetricsPrinter.print(
+          result,
+          getProjectDirectory().get().getAsFile().toPath(),
+          System.out
+      );
     }
 
     Baseline baseline = Baseline.load(

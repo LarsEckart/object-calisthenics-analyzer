@@ -1,13 +1,17 @@
 package com.github.larseckart.objectcalisthenics.gradle;
 
+import com.github.larseckart.objectcalisthenics.analyzer.Advice;
 import com.github.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.github.larseckart.objectcalisthenics.analyzer.Violation;
 
 import java.io.PrintStream;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.List;
 
 /**
- * Prints the backwards-compatible {@code METRIC} lines used by the original
- * Python measurement script.
+ * Prints concise findings and the backwards-compatible {@code METRIC} lines
+ * used by the original Python measurement script.
  */
 final class MetricsPrinter {
 
@@ -15,7 +19,7 @@ final class MetricsPrinter {
     // utility class
   }
 
-  static void print(AnalysisResult result, PrintStream out) {
+  static void print(AnalysisResult result, Path projectDirectory, PrintStream out) {
     long classesOver50 = result.violations().stream()
         .filter(v -> v.rule().equals("class-too-long"))
         .count();
@@ -47,13 +51,41 @@ final class MetricsPrinter {
     out.println("METRIC non_first_class_collections=" + nonFirstClassCollections);
     out.println("METRIC traversal_chains=" + traversalChains);
 
-    for (Violation violation : result.violations()) {
-      out.println(violation.file() + ":" + violation.line() + " " + violation.rule() + " - " + violation.message());
-      out.println("  Why: " + violation.advice().principle());
-      for (String option : violation.advice().options()) {
-        out.println("  Try: " + option);
-      }
-      out.println("  Note: " + violation.advice().caution());
+    List<Violation> violations = result.violations().stream()
+        .sorted(Comparator.comparing(Violation::rule)
+            .thenComparing(violation -> relativePath(violation.file(), projectDirectory))
+            .thenComparingInt(Violation::line)
+            .thenComparing(Violation::subject)
+            .thenComparing(Violation::message))
+        .toList();
+
+    for (Violation violation : violations) {
+      out.println(violation.rule() + " | "
+          + relativePath(violation.file(), projectDirectory) + ":" + violation.line() + " | "
+          + violation.message());
     }
+
+    violations.stream()
+        .map(Violation::rule)
+        .distinct()
+        .forEach(rule -> printAdvice(rule, Advice.forRule(rule), out));
+  }
+
+  private static void printAdvice(String rule, Advice advice, PrintStream out) {
+    out.println("ADVICE " + rule);
+    out.println("  Why: " + advice.principle());
+    for (String option : advice.options()) {
+      out.println("  Try: " + option);
+    }
+    out.println("  Note: " + advice.caution());
+  }
+
+  private static String relativePath(Path file, Path projectDirectory) {
+    Path absoluteFile = file.toAbsolutePath().normalize();
+    Path absoluteProjectDirectory = projectDirectory.toAbsolutePath().normalize();
+    Path displayedPath = absoluteFile.startsWith(absoluteProjectDirectory)
+        ? absoluteProjectDirectory.relativize(absoluteFile)
+        : absoluteFile;
+    return displayedPath.toString().replace(file.getFileSystem().getSeparator(), "/");
   }
 }

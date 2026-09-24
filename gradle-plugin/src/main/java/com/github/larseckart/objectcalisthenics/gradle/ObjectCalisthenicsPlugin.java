@@ -60,6 +60,7 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
           task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
           task.getJson().set(extension.getReports().getJson());
           task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
+          task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
         });
 
     TaskProvider<ObjectCalisthenicsBaselineTask> baselineTask = project.getTasks().register(

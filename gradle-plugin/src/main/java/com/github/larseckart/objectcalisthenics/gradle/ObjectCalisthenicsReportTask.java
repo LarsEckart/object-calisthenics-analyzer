@@ -5,12 +5,14 @@ import com.github.larseckart.objectcalisthenics.analyzer.ObjectCalisthenicsAnaly
 import com.github.larseckart.objectcalisthenics.analyzer.RuleSet;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
@@ -48,6 +50,9 @@ public abstract class ObjectCalisthenicsReportTask extends DefaultTask {
   @Input
   public abstract Property<Boolean> getConsoleSummary();
 
+  @Internal
+  public abstract DirectoryProperty getProjectDirectory();
+
   @TaskAction
   public void report() {
     RuleSet ruleSet = RuleSetFactory.from(getRules());
@@ -66,7 +71,11 @@ public abstract class ObjectCalisthenicsReportTask extends DefaultTask {
     JsonReportWriter.write(result, getJson().get().getAsFile().toPath());
 
     if (getConsoleSummary().get()) {
-      MetricsPrinter.print(result, System.out);
+      MetricsPrinter.print(
+          result,
+          getProjectDirectory().get().getAsFile().toPath(),
+          System.out
+      );
     }
   }
 }

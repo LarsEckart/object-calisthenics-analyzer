@@ -177,6 +177,12 @@ of a design defect.
 - `objectCalisthenicsReport` – writes a JSON report without failing.
 - The `check` lifecycle task depends on `objectCalisthenicsCheck`.
 
+The default console output is text. Each finding occupies one line in the form
+`rule | project-relative-file:line | message`, sorted by rule, file, and line.
+Guidance is printed once for each rule that has findings rather than repeated
+for every finding. The legacy `METRIC` lines remain available in the same
+output. JSON is written only when `objectCalisthenicsReport` is run.
+
 ### Adopting on an existing codebase
 
 To start enforcing the rules without first fixing every existing finding, run:
