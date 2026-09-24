@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -152,7 +153,10 @@ public class ObjectCalisthenicsAnalyzer {
     }
 
     if (rules.forbidTraversalChains()) {
-      checkTraversalChains(unit, file, violations);
+      Set<String> excludedClassNames = excludedClasses.stream()
+          .map(ExcludedClass::className)
+          .collect(HashSet::new, HashSet::add, HashSet::addAll);
+      checkTraversalChains(unit, file, violations, excludedClassNames);
     }
   }
 
@@ -512,7 +516,8 @@ public class ObjectCalisthenicsAnalyzer {
   private void checkTraversalChains(
       CompilationUnit unit,
       Path file,
-      List<Violation> violations
+      List<Violation> violations,
+      Set<String> excludedClassNames
   ) {
     List<Expression> candidates = new ArrayList<>();
     candidates.addAll(unit.findAll(MethodCallExpr.class));
@@ -520,7 +525,24 @@ public class ObjectCalisthenicsAnalyzer {
 
     candidates.stream()
         .filter(expression -> !isReceiverPrefix(expression))
+        .filter(expression -> !insideExcludedType(expression, excludedClassNames))
         .forEach(expression -> addTraversalViolation(expression, file, violations));
+  }
+
+  private boolean insideExcludedType(Expression expression, Set<String> excludedClassNames) {
+    Optional<TypeDeclaration<?>> current = typeAncestor(expression);
+    while (current.isPresent()) {
+      if (excludedClassNames.contains(current.get().getNameAsString())) {
+        return true;
+      }
+      current = typeAncestor(current.get());
+    }
+    return false;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Optional<TypeDeclaration<?>> typeAncestor(Node node) {
+    return node.findAncestor(TypeDeclaration.class).map(n -> (TypeDeclaration<?>) n);
   }
 
   private void addTraversalViolation(
@@ -542,10 +564,16 @@ public class ObjectCalisthenicsAnalyzer {
     }
 
     String rendered = expression.toString().replaceAll("\\s+", " ");
+    String subject = expression.findAncestor(MethodDeclaration.class)
+        .map(MethodDeclaration::getNameAsString)
+        .orElseGet(() -> expression.findAncestor(TypeDeclaration.class)
+            .map(TypeDeclaration::getNameAsString)
+            .orElse(""));
     violations.add(new Violation(
         file,
         expression.getBegin().map(position -> position.line).orElse(0),
         "traversal-chain",
+        subject,
         "Traversal chain has %d steps: %s".formatted(traversalSteps, rendered)
     ));
   }

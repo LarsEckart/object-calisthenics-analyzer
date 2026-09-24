@@ -255,6 +255,52 @@ class ObjectCalisthenicsAnalyzerTest {
     assertThat(result.violations()).isEmpty();
   }
 
+  @Test
+  void excludedClassesDoNotReceiveTraversalFindings() throws IOException {
+    Path source = writeSource("ExcludedTraversal.java", """
+        class ExcludedResponse {
+          public void handle() {
+            customer().address();
+          }
+        }
+        """);
+    ObjectCalisthenicsAnalyzer analyzerWithExclusions = new ObjectCalisthenicsAnalyzer(
+        new RuleSet(50, 2, true, true, 1, true, true, false, false, true, Set.of(), Set.of()),
+        List.of(".*Response$"));
+
+    AnalysisResult result = analyzerWithExclusions.analyze(List.of(source));
+
+    assertThat(result.violations()).isEmpty();
+    assertThat(result.excludedClasses())
+        .singleElement()
+        .matches(e -> e.className().equals("ExcludedResponse"))
+        .matches(e -> e.matchedPatterns().contains(".*Response$"));
+  }
+
+  @Test
+  void traversalFindingsUseEnclosingMethodAsSubject() throws IOException {
+    Path source = writeSource("TwoChains.java", """
+        class TwoChains {
+          public void first() {
+            customer().address();
+          }
+          public void second() {
+            order().customer().name();
+          }
+        }
+        """);
+    ObjectCalisthenicsAnalyzer chainAnalyzer = new ObjectCalisthenicsAnalyzer(new RuleSet(
+        50, 2, true, true, 1, true, true, false,
+        false, true, Set.of(), Set.of()));
+
+    List<Violation> chains = chainAnalyzer.analyze(List.of(source)).violations().stream()
+        .filter(v -> v.rule().equals("traversal-chain"))
+        .toList();
+
+    assertThat(chains).hasSize(2);
+    assertThat(chains).extracting(Violation::subject).containsExactlyInAnyOrder("first", "second");
+  }
+
   private Path writeSource(String fileName, String source) throws IOException {
     Path file = tempDir.resolve(fileName);
     Files.writeString(file, source);
