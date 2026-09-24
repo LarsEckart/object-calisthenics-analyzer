@@ -49,9 +49,8 @@ jobs:
             exit 1
           fi
 
-      - name: Commit, tag, and release
+      - name: Commit and push README update
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ github.event.inputs.version }}
         run: |
           git config user.name "github-actions[bot]"
@@ -66,15 +65,3 @@ jobs:
 
           git pull --rebase origin main
           git push origin HEAD:main
-
-          tag="v$VERSION"
-          if git ls-remote --tags origin "refs/tags/$tag" | grep -q "$tag"; then
-            echo "Tag $tag already exists on origin." >&2
-            exit 1
-          fi
-          git tag "$tag"
-          git push origin "$tag"
-
-          gh release create "$tag" \
-            --title "$tag" \
-            --generate-notes
