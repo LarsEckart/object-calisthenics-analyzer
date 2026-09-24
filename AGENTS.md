@@ -7,6 +7,6 @@ A Java 17+ analyzer and Gradle plugin that enforce configurable Object Calisthen
 
 Build and test from the repository root with `./gradlew check`.
 
-Releases are tag-driven: run `gh release create vX.Y.Z --title "vX.Y.Z" --generate-notes` and the `release.yml` workflow publishes the analyzer to Maven Central and the plugin to the Gradle Plugin Portal.
+Releases are automated with `.github/workflows/prepare-release.yml`. Trigger it with `gh workflow run prepare-release.yml -f version=X.Y.Z` (for example `gh workflow run prepare-release.yml -f version=0.3.0`). It updates the version strings in `README.md`, commits and pushes to `main`, creates and pushes the tag `vX.Y.Z`, creates the GitHub release with generated notes, and then the `release.yml` workflow publishes the analyzer to Maven Central and the plugin to the Gradle Plugin Portal.
 
 See [README.md](README.md) for installation, configuration, tasks, report output, and compatibility. See [SPEC.md](SPEC.md) for rule behaviour and edge cases.
