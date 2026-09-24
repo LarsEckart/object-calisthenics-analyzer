@@ -161,7 +161,7 @@ resolve types. `safeChainRoots` contains exact dotted starting receivers;
 `System.out` and `System.err` (including their `java.lang` forms) are safe by
 default.
 
-The rule is disabled by default. It deliberately does not infer whether
+The rule is enabled by default. It deliberately does not infer whether
 `ball.motion().relativeTo(...)` is a good whole-value collaboration while
 `ball.position().minus(...)` is state traversal: those expressions have the
 same AST shape without type and domain knowledge. Splitting a chain into local

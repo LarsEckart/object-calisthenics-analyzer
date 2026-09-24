@@ -57,9 +57,9 @@ public abstract class ObjectCalisthenicsRules {
     getMaxMethodNesting().convention(1);
     getForbidGetters().convention(true);
     getForbidSetters().convention(true);
-    getForbidNonFirstClassCollections().convention(false);
+    getForbidNonFirstClassCollections().convention(true);
     getStrictGetterNames().convention(false);
-    getForbidTraversalChains().convention(false);
+    getForbidTraversalChains().convention(true);
     getFluentChainMethods().convention(Set.of());
     getSafeChainRoots().convention(Set.of(
         "System.out", "System.err", "java.lang.System.out", "java.lang.System.err"));

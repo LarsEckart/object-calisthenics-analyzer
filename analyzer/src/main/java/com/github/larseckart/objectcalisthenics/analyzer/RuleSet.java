@@ -31,8 +31,9 @@ public record RuleSet(
   }
 
   /**
-   * Creates a rule set with configurable record handling and default behavior
-   * for newer checks.
+   * Creates a rule set with configurable record handling. Newer checks are
+   * enabled by default because the analyzer exists to enforce Object
+   * Calisthenics rules; users opt out of checks they do not want.
    */
   public RuleSet(
       int maxClassLines,
@@ -54,14 +55,14 @@ public record RuleSet(
         forbidSetters,
         forbidNonFirstClassCollections,
         false,
-        false,
+        true,
         Set.of(),
         DEFAULT_SAFE_CHAIN_ROOTS);
   }
 
   /**
    * Creates a rule set with the original seven settings. Record components
-   * remain included and newer checks keep their default behavior.
+   * remain included and newer checks are enabled by default.
    */
   public RuleSet(
       int maxClassLines,
@@ -82,12 +83,12 @@ public record RuleSet(
         forbidSetters,
         forbidNonFirstClassCollections,
         false,
-        false,
+        true,
         Set.of(),
         DEFAULT_SAFE_CHAIN_ROOTS);
   }
 
   public static RuleSet defaults() {
-    return new RuleSet(50, 2, true, 1, true, true, false);
+    return new RuleSet(50, 2, true, 1, true, true, true);
   }
 }
