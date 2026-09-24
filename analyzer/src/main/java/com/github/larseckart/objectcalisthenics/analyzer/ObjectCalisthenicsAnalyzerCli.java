@@ -35,6 +35,9 @@ public class ObjectCalisthenicsAnalyzerCli {
     long gettersSetters = result.violations().stream()
         .filter(v -> v.rule().equals("getter") || v.rule().equals("setter"))
         .count();
+    long traversalChains = result.violations().stream()
+        .filter(v -> v.rule().equals("traversal-chain"))
+        .count();
 
     System.out.println("METRIC violations=" + result.totalViolations());
     System.out.println("METRIC classes_over_50=" + classesTooLong);
@@ -42,6 +45,7 @@ public class ObjectCalisthenicsAnalyzerCli {
     System.out.println("METRIC methods_with_else=" + methodsWithElse);
     System.out.println("METRIC methods_over_nested=" + methodsOverNested);
     System.out.println("METRIC getter_setter_methods=" + gettersSetters);
+    System.out.println("METRIC traversal_chains=" + traversalChains);
 
     for (Violation violation : result.violations()) {
       System.out.println(violation.file() + ":" + violation.line() + " " + violation.rule() + " - " + violation.message());

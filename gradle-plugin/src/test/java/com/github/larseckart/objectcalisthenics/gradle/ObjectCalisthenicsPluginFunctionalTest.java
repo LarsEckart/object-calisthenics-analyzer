@@ -41,6 +41,93 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
+  void ignoreFailuresReportsViolationsWithoutFailing() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        objectCalisthenics {
+            ignoreFailures.set(true)
+        }
+        """);
+
+    BuildResult result = GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments("objectCalisthenicsCheck", "--stacktrace")
+        .build();
+
+    assertThat(result.getOutput()).contains("METRIC violations=2");
+    assertThat(result.getOutput()).contains("ignoring failures as configured");
+  }
+
+  @Test
+  void baselineIgnoresExistingViolationsAndLineChangesButRejectsNewOnes() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+        """);
+
+    BuildResult baselineResult = runner("objectCalisthenicsBaseline").build();
+
+    Path baseline = projectDir.resolve("object-calisthenics-baseline.txt");
+    assertThat(baseline).exists();
+    assertThat(Files.readString(baseline))
+        .contains("src/main/java/Bad.java")
+        .contains("class-too-long")
+        .contains("too-many-instance-fields");
+    assertThat(baselineResult.getOutput()).contains("Wrote 2 Object Calisthenics baseline entries");
+
+    Path badSource = projectDir.resolve("src/main/java/Bad.java");
+    Files.writeString(badSource, "\n\n" + Files.readString(badSource));
+    runner("objectCalisthenicsCheck").build();
+
+    Files.writeString(projectDir.resolve("src/main/java/NewViolation.java"), """
+        public class NewViolation {
+          private int value;
+
+          public int getValue() {
+            return value;
+          }
+        }
+        """);
+
+    BuildResult failedCheck = runner("objectCalisthenicsCheck").buildAndFail();
+    assertThat(failedCheck.getOutput())
+        .contains("Object Calisthenics violations found: 1 new, 2 baselined");
+  }
+
+  @Test
+  void checkReportsStaleBaselineEntries() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+        """);
+    runner("objectCalisthenicsBaseline").build();
+
+    Files.delete(projectDir.resolve("src/main/java/Bad.java"));
+    Files.writeString(projectDir.resolve("src/main/java/Clean.java"), "class Clean {}\n");
+
+    BuildResult result = runner("objectCalisthenicsCheck").build();
+
+    assertThat(result.getOutput())
+        .contains("baseline has 2 stale entries")
+        .contains("objectCalisthenicsBaseline");
+  }
+
+  @Test
   void reportTaskWritesJsonWithoutFailing() throws IOException {
     writeSettings();
     writeBadJavaSource();
@@ -64,6 +151,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
     String json = Files.readString(report);
     assertThat(json).contains("\"violations\":");
     assertThat(json).contains("class-too-long");
+    assertThat(json).contains("\"subject\": \"Bad\"");
     assertThat(json).contains("\"advice\"");
     assertThat(json).contains("Keep each class focused on one responsibility.");
   }
@@ -106,10 +194,91 @@ class ObjectCalisthenicsPluginFunctionalTest {
     assertThat(json).contains("\"rule\": \"non-first-class-collection\"");
   }
 
+  @Test
+  void reportTaskCanExcludeRecordComponentsFromFieldRule() throws IOException {
+    writeSettings();
+    Path sourceDir = projectDir.resolve("src/main/java/");
+    Files.createDirectories(sourceDir);
+    Files.writeString(sourceDir.resolve("Configuration.java"), """
+        record Configuration(String host, int port, boolean secure) {
+        }
+        """);
+
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        objectCalisthenics {
+            rules {
+                includeRecordComponentsInFieldRule.set(false)
+            }
+        }
+        """);
+
+    GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments("objectCalisthenicsReport", "--stacktrace")
+        .build();
+
+    String json = Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json"));
+    assertThat(json).contains("\"violations\": 0");
+    assertThat(json).doesNotContain("too-many-record-components");
+  }
+
+  @Test
+  void reportTaskAppliesGetterAndTraversalConfiguration() throws IOException {
+    writeSettings();
+    Path sourceDir = projectDir.resolve("src/main/java/");
+    Files.createDirectories(sourceDir);
+    Files.writeString(sourceDir.resolve("ConfiguredRules.java"), """
+        class ConfiguredRules {
+          public boolean isReady() { return calculateReadiness(); }
+          public Object address() { return customer().address(); }
+        }
+        """);
+
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        objectCalisthenics {
+            rules {
+                strictGetterNames.set(true)
+                forbidTraversalChains.set(true)
+                fluentChainMethods.set(setOf("with", "build"))
+                safeChainRoots.set(setOf("System.out"))
+            }
+        }
+        """);
+
+    GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments("objectCalisthenicsReport", "--stacktrace")
+        .build();
+
+    String json = Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json"));
+    assertThat(json).contains("\"getter_setter_methods\": 1");
+    assertThat(json).contains("\"traversal_chains\": 1");
+    assertThat(json).contains("\"rule\": \"traversal-chain\"");
+  }
+
   private void writeSettings() throws IOException {
     Files.writeString(projectDir.resolve("settings.gradle.kts"), """
         rootProject.name = "functional-test"
         """);
+  }
+
+  private GradleRunner runner(String task) {
+    return GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments(task, "--stacktrace");
   }
 
   private void writeBadJavaSource() throws IOException {

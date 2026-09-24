@@ -2,6 +2,7 @@ package com.github.larseckart.objectcalisthenics.analyzer;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParserConfiguration;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -11,8 +12,19 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.ArrayAccessExpr;
+import com.github.javaparser.ast.expr.CastExpr;
+import com.github.javaparser.ast.expr.EnclosedExpr;
+import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.StringLiteralExpr;
+import com.github.javaparser.ast.expr.SuperExpr;
+import com.github.javaparser.ast.expr.ThisExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
+import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
@@ -24,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -57,6 +70,12 @@ public class ObjectCalisthenicsAnalyzer {
   );
 
   private record FieldInfo(String name, Type type) {
+  }
+
+  private record ChainStep(String name, boolean method) {
+  }
+
+  private record TraversalChain(String root, List<ChainStep> steps) {
   }
 
   public ObjectCalisthenicsAnalyzer(RuleSet rules) {
@@ -117,18 +136,33 @@ public class ObjectCalisthenicsAnalyzer {
         }
       }
     }
+
+    if (rules.forbidTraversalChains()) {
+      checkTraversalChains(unit, file, violations);
+    }
   }
 
   private void checkType(TypeDeclaration<?> type, Path file, List<Violation> violations) {
     if (type instanceof RecordDeclaration record) {
       checkClassLength(record, file, violations);
-      checkRecordFields(record, file, violations);
+      if (rules.includeRecordComponentsInFieldRule() && !suppressesFieldRule(record)) {
+        checkRecordFields(record, file, violations);
+      }
       checkFirstClassCollections(record, file, violations);
     } else if (type instanceof ClassOrInterfaceDeclaration classDecl) {
       checkClassLength(classDecl, file, violations);
-      checkClassFields(classDecl, file, violations);
+      if (!suppressesFieldRule(classDecl)) {
+        checkClassFields(classDecl, file, violations);
+      }
       checkFirstClassCollections(classDecl, file, violations);
     }
+  }
+
+  private boolean suppressesFieldRule(TypeDeclaration<?> type) {
+    return type.getAnnotations().stream()
+        .filter(annotation -> annotation.getName().getIdentifier().equals("SuppressWarnings"))
+        .flatMap(annotation -> annotation.findAll(StringLiteralExpr.class).stream())
+        .anyMatch(value -> value.asString().equals("calisthenics:fields"));
   }
 
   // Reproduces the Python script's class/record detection, including modifiers
@@ -154,6 +188,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           declarationLine,
           "class-too-long",
+          type.getNameAsString(),
           "%s has %d meaningful lines (limit %d)".formatted(
               type.getNameAsString(), meaningfulLines, rules.maxClassLines())
       ));
@@ -207,6 +242,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           type.getBegin().map(p -> p.line).orElse(0),
           "too-many-instance-fields",
+          type.getNameAsString(),
           "%s has %d instance fields (limit %d)".formatted(
               type.getNameAsString(), instanceFields, rules.maxFieldsPerClass())
       ));
@@ -220,6 +256,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           record.getBegin().map(p -> p.line).orElse(0),
           "too-many-record-components",
+          record.getNameAsString(),
           "%s has %d record components (limit %d)".formatted(
               record.getNameAsString(), components, rules.maxFieldsPerClass())
       ));
@@ -255,6 +292,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           type.getBegin().map(p -> p.line).orElse(0),
           "non-first-class-collection",
+          type.getNameAsString(),
           "%s is not a first-class collection: %d collection field(s) and %d other instance field(s)".formatted(
               type.getNameAsString(), collectionFields, otherFields)
       ));
@@ -292,6 +330,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           method.getBegin().map(p -> p.line).orElse(0),
           "else-used",
+          method.getNameAsString(),
           "Method '%s' uses the else keyword".formatted(method.getNameAsString())
       ));
     }
@@ -303,6 +342,7 @@ public class ObjectCalisthenicsAnalyzer {
             file,
             method.getBegin().map(p -> p.line).orElse(0),
             "method-over-nested",
+            method.getNameAsString(),
             "Method '%s' nests %d levels deep (limit %d)".formatted(
                 method.getNameAsString(), depth, rules.maxMethodNesting())
         ));
@@ -314,6 +354,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           method.getBegin().map(p -> p.line).orElse(0),
           "getter",
+          method.getNameAsString(),
           "Method '%s' looks like a getter".formatted(method.getNameAsString())
       ));
     }
@@ -323,6 +364,7 @@ public class ObjectCalisthenicsAnalyzer {
           file,
           method.getBegin().map(p -> p.line).orElse(0),
           "setter",
+          method.getNameAsString(),
           "Method '%s' looks like a setter".formatted(method.getNameAsString())
       ));
     }
@@ -361,12 +403,198 @@ public class ObjectCalisthenicsAnalyzer {
 
   private boolean looksLikeGetter(MethodDeclaration method) {
     String name = method.getNameAsString();
+    int prefixLength = name.startsWith("is") ? 2 : 3;
     boolean rightPrefix = (name.startsWith("get") || name.startsWith("is"))
-        && name.length() > (name.startsWith("is") ? 2 : 3)
-        && Character.isUpperCase(name.charAt(name.startsWith("is") ? 2 : 3));
-    return rightPrefix
-        && !method.getType().isVoidType()
-        && method.getParameters().isEmpty();
+        && name.length() > prefixLength
+        && Character.isUpperCase(name.charAt(prefixLength));
+    if (!rightPrefix || method.getType().isVoidType() || !method.getParameters().isEmpty()) {
+      return false;
+    }
+    if (rules.strictGetterNames()) {
+      return true;
+    }
+
+    String property = decapitalize(name.substring(prefixLength));
+    return declaresProperty(method, property) || directlyReturnsState(method);
+  }
+
+  private String decapitalize(String name) {
+    if (name.length() > 1 && Character.isUpperCase(name.charAt(0))
+        && Character.isUpperCase(name.charAt(1))) {
+      return name;
+    }
+    return name.substring(0, 1).toLowerCase(Locale.ROOT) + name.substring(1);
+  }
+
+  private boolean declaresProperty(MethodDeclaration method, String property) {
+    Optional<TypeDeclaration<?>> owner = declaringType(method);
+    if (owner.isEmpty()) {
+      return false;
+    }
+    if (owner.get() instanceof RecordDeclaration record) {
+      return record.getParameters().stream()
+          .anyMatch(parameter -> parameter.getNameAsString().equals(property));
+    }
+    if (owner.get() instanceof ClassOrInterfaceDeclaration type) {
+      return type.getFields().stream()
+          .flatMap(field -> field.getVariables().stream())
+          .anyMatch(variable -> variable.getNameAsString().equals(property));
+    }
+    return false;
+  }
+
+  private Optional<TypeDeclaration<?>> declaringType(MethodDeclaration method) {
+    Optional<Node> current = method.getParentNode();
+    while (current.isPresent()) {
+      if (current.get() instanceof TypeDeclaration<?> type) {
+        return Optional.of(type);
+      }
+      current = current.get().getParentNode();
+    }
+    return Optional.empty();
+  }
+
+  private boolean directlyReturnsState(MethodDeclaration method) {
+    if (method.getBody().isEmpty() || method.getBody().get().getStatements().size() != 1) {
+      return false;
+    }
+    return method.getBody().get().getStatement(0).toReturnStmt()
+        .flatMap(ReturnStmt::getExpression)
+        .map(this::unwrap)
+        .map(expression -> expression instanceof NameExpr
+            || expression instanceof FieldAccessExpr field
+            && field.getScope() instanceof ThisExpr)
+        .orElse(false);
+  }
+
+  private void checkTraversalChains(
+      CompilationUnit unit,
+      Path file,
+      List<Violation> violations
+  ) {
+    List<Expression> candidates = new ArrayList<>();
+    candidates.addAll(unit.findAll(MethodCallExpr.class));
+    candidates.addAll(unit.findAll(FieldAccessExpr.class));
+
+    candidates.stream()
+        .filter(expression -> !isReceiverPrefix(expression))
+        .forEach(expression -> addTraversalViolation(expression, file, violations));
+  }
+
+  private void addTraversalViolation(
+      Expression expression,
+      Path file,
+      List<Violation> violations
+  ) {
+    TraversalChain chain = traversalChain(expression);
+    int safeRootSteps = safeRootSteps(chain);
+    int traversalSteps = chain.steps().size() - safeRootSteps;
+    for (int i = safeRootSteps; i < chain.steps().size() - 1; i++) {
+      ChainStep step = chain.steps().get(i);
+      if (step.method() && rules.fluentChainMethods().contains(step.name())) {
+        traversalSteps--;
+      }
+    }
+    if (traversalSteps <= 1) {
+      return;
+    }
+
+    String rendered = expression.toString().replaceAll("\\s+", " ");
+    violations.add(new Violation(
+        file,
+        expression.getBegin().map(position -> position.line).orElse(0),
+        "traversal-chain",
+        "Traversal chain has %d steps: %s".formatted(traversalSteps, rendered)
+    ));
+  }
+
+  private boolean isReceiverPrefix(Expression expression) {
+    Expression current = expression;
+    while (current.getParentNode().isPresent()) {
+      var parent = current.getParentNode().get();
+      if (parent instanceof EnclosedExpr enclosed && enclosed.getInner() == current
+          || parent instanceof CastExpr cast && cast.getExpression() == current
+          || parent instanceof ArrayAccessExpr array && array.getName() == current) {
+        current = (Expression) parent;
+        continue;
+      }
+      if (parent instanceof MethodCallExpr call) {
+        return call.getScope().isPresent() && call.getScope().get() == current;
+      }
+      if (parent instanceof FieldAccessExpr field) {
+        return field.getScope() == current;
+      }
+      return false;
+    }
+    return false;
+  }
+
+  private TraversalChain traversalChain(Expression expression) {
+    List<ChainStep> steps = new ArrayList<>();
+    String root = collectTraversal(expression, steps);
+    return new TraversalChain(root, List.copyOf(steps));
+  }
+
+  private String collectTraversal(Expression expression, List<ChainStep> steps) {
+    Expression unwrapped = unwrap(expression);
+    if (unwrapped instanceof MethodCallExpr call) {
+      String root = call.getScope()
+          .map(scope -> collectTraversal(scope, steps))
+          .orElse("");
+      steps.add(new ChainStep(call.getNameAsString(), true));
+      return root;
+    }
+    if (unwrapped instanceof FieldAccessExpr field) {
+      String root = collectTraversal(field.getScope(), steps);
+      steps.add(new ChainStep(field.getNameAsString(), false));
+      return root;
+    }
+    if (unwrapped instanceof ArrayAccessExpr array) {
+      return collectTraversal(array.getName(), steps);
+    }
+    if (unwrapped instanceof NameExpr name) {
+      return name.getNameAsString();
+    }
+    if (unwrapped instanceof ThisExpr) {
+      return "this";
+    }
+    if (unwrapped instanceof SuperExpr) {
+      return "super";
+    }
+    return unwrapped.toString();
+  }
+
+  private Expression unwrap(Expression expression) {
+    Expression current = expression;
+    while (current instanceof EnclosedExpr || current instanceof CastExpr) {
+      if (current instanceof EnclosedExpr enclosed) {
+        current = enclosed.getInner();
+      } else {
+        current = current.asCastExpr().getExpression();
+      }
+    }
+    return current;
+  }
+
+  private int safeRootSteps(TraversalChain chain) {
+    if ((chain.root().equals("this") || chain.root().equals("super"))
+        && !chain.steps().isEmpty() && !chain.steps().get(0).method()) {
+      return 1;
+    }
+
+    int bestMatch = 0;
+    String path = chain.root();
+    for (int i = 0; i < chain.steps().size(); i++) {
+      ChainStep step = chain.steps().get(i);
+      if (step.method()) {
+        break;
+      }
+      path += "." + step.name();
+      if (rules.safeChainRoots().contains(path)) {
+        bestMatch = i + 1;
+      }
+    }
+    return bestMatch;
   }
 
   private boolean looksLikeSetter(MethodDeclaration method) {

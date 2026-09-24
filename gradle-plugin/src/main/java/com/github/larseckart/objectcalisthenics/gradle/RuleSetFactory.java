@@ -12,11 +12,16 @@ final class RuleSetFactory {
     return new RuleSet(
         rules.getMaxClassLines().get(),
         rules.getMaxFieldsPerClass().get(),
+        rules.getIncludeRecordComponentsInFieldRule().get(),
         rules.getForbidElse().get(),
         rules.getMaxMethodNesting().get(),
         rules.getForbidGetters().get(),
         rules.getForbidSetters().get(),
-        rules.getForbidNonFirstClassCollections().get()
+        rules.getForbidNonFirstClassCollections().get(),
+        rules.getStrictGetterNames().get(),
+        rules.getForbidTraversalChains().get(),
+        rules.getFluentChainMethods().get(),
+        rules.getSafeChainRoots().get()
     );
   }
 }

@@ -34,6 +34,9 @@ final class MetricsPrinter {
     long nonFirstClassCollections = result.violations().stream()
         .filter(v -> v.rule().equals("non-first-class-collection"))
         .count();
+    long traversalChains = result.violations().stream()
+        .filter(v -> v.rule().equals("traversal-chain"))
+        .count();
 
     out.println("METRIC violations=" + result.totalViolations());
     out.println("METRIC classes_over_50=" + classesOver50);
@@ -42,6 +45,7 @@ final class MetricsPrinter {
     out.println("METRIC methods_over_nested=" + methodsOverNested);
     out.println("METRIC getter_setter_methods=" + getterSetters);
     out.println("METRIC non_first_class_collections=" + nonFirstClassCollections);
+    out.println("METRIC traversal_chains=" + traversalChains);
 
     for (Violation violation : result.violations()) {
       out.println(violation.file() + ":" + violation.line() + " " + violation.rule() + " - " + violation.message());

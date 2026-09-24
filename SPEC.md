@@ -27,7 +27,8 @@ The existing measurement script is:
 It outputs `METRIC` lines for five measurable rules:
 
 - class body larger than 50 non-comment, non-blank lines
-- class/record with more than two instance variables
+- class with more than two instance variables; record components are included
+  by default and can be excluded with `includeRecordComponentsInFieldRule`
 - method containing an `else` keyword
 - method with more than one level of nested braces
 - public getter or setter method
@@ -70,6 +71,7 @@ objectCalisthenics {
     rules {
         maxClassLines.set(50)
         maxFieldsPerClass.set(2)
+        includeRecordComponentsInFieldRule.set(true)
         forbidElse.set(true)
         maxMethodNesting.set(1)
         forbidGetters.set(true)
@@ -120,13 +122,13 @@ METRIC getter_setter_methods=4
 | Rule | Relevant AST nodes | Detection idea |
 |---|---|---|
 | Keep all classes < 50 lines | `ClassOrInterfaceDeclaration`, `RecordDeclaration`, `EnumDeclaration` | Compute meaningful lines from source range, ignoring blank lines and line comments |
-| ≤ 2 instance variables per class | `FieldDeclaration` inside a type, `RecordDeclaration.getParameters()` | Count non-static instance fields; count record components |
+| ≤ 2 instance variables per class | `FieldDeclaration` inside a type, `RecordDeclaration.getParameters()` | Count non-static instance fields. Count record components when `includeRecordComponentsInFieldRule` is enabled. Suppress an intentional per-type exception with `@SuppressWarnings("calisthenics:fields")` |
 | Don't use `else` | `IfStmt` | Flag when `getElseStmt().isPresent()` |
 | One level of indentation per method | `MethodDeclaration`, `BlockStmt` inside it | Walk the method body and find the maximum nesting depth of blocks/statements. Depth > 1 is a violation. Loops, ifs, try-with-resources, lambdas and anonymous classes all count as nesting |
-| No getters or setters | `MethodDeclaration` | Detect `public T getX()` / `public boolean isX()` with no args and a body that returns a field; detect `public void setX(T x)` that assigns to a field |
+| No getters or setters | `MethodDeclaration` | Detect getter-shaped methods when the property is a declared field/record component or the body directly returns state; optionally use strict name-only matching. Detect `public void setX(T x)` setters by signature |
 | Wrap all primitives and strings | field and method parameter types | Flag public fields, parameters or return types that are primitive, boxed, `String`, or arrays of those when they represent domain concepts. Allow value-object wrappers. Requires configuration/deny-list |
 | First-class collections | field and method parameter types | Flag `List`, `Set`, `Map`, arrays or varargs that are exposed publicly without a wrapping collection class |
-| One dot per line | line-level text + `MethodCallExpr` chains | For each statement line, check the number of `.` separators in method/field access chains. Treat fluent builder chains as configurable exceptions |
+| One dot per line | `MethodCallExpr`, `FieldAccessExpr` | Follow receiver paths and flag maximal chains with more than one non-exempt step. Inspect arguments independently; treat configured fluent methods and safe roots as exceptions |
 | Don't abbreviate | names of classes, methods, fields, variables, parameters | Maintain a configurable list of abbreviations (e.g. `conn`, `stmt`, `rs`, `db`, `id`) and flag identifiers containing them |
 
 ## Implementation sketch
@@ -184,7 +186,6 @@ The analyzer is framework-agnostic. The Gradle plugin is a thin adapter that:
 
 ## Open questions
 
-- **One dot per line.** The rule is really about the Law of Demeter. A fully automated check needs a clear policy on fluent APIs (`builder.setX().setY().build()`), `System.out.println`, and field access like `this.database`. Decide whether to count dots in names, only call chains, or use AST depth of `MethodCallExpr`/`FieldAccessExpr`.
 - **Abbreviations.** The list is subjective. Make it a configuration file in each repo so teams can tune it.
 - **Primitive wrapping.** The rule is in tension with configuration / DTO / JSON mapping. Define a whitelist for framework-level raw types and a deny-list for domain concepts.
 - **Lambda bodies.** A lambda with `{}` can introduce nested braces inside a method. Decide whether the rule applies to them or only to explicit `BlockStmt`s in the method body.

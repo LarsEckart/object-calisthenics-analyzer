@@ -48,7 +48,14 @@ public record Advice(String principle, List<String> options, String caution) {
           "Move the caller's decision into an intent-revealing method on this object.",
           "Expose a domain operation such as approve, matches, or display instead of raw state.",
           "Keep read-only access at a DTO or display boundary when callers do not make domain decisions."),
-      "A name-based check cannot tell a DTO boundary from domain code; review the caller before changing it.");
+      "A structural check cannot tell a DTO boundary from domain code; review the caller before changing it.");
+  private static final Advice TRAVERSAL_CHAIN = new Advice(
+      "Ask an immediate collaborator to do the work instead of navigating through its collaborators.",
+      List.of(
+          "Move the operation to the first object in the chain and give it an intent-revealing name.",
+          "Pass the required value to a collaborator instead of obtaining and coordinating its parts here.",
+          "Configure an exception when this is a deliberate fluent API or value operation."),
+      "Extracting temporary variables only hides the chain; first decide whether it is intentional value arithmetic or traversal.");
   private static final Advice FIRST_CLASS_COLLECTION = new Advice(
       "Give a domain collection its own home for collection behaviour.",
       List.of(
@@ -72,6 +79,7 @@ public record Advice(String principle, List<String> options, String caution) {
       case "method-over-nested" -> NESTING;
       case "getter", "setter" -> ACCESSOR;
       case "non-first-class-collection" -> FIRST_CLASS_COLLECTION;
+      case "traversal-chain" -> TRAVERSAL_CHAIN;
       default -> UNKNOWN;
     };
   }

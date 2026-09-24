@@ -45,6 +45,9 @@ final class JsonReportWriter {
         .append(",\n");
     sb.append("    \"non_first_class_collections\": ")
         .append(count(violations, "non-first-class-collection"))
+        .append(",\n");
+    sb.append("    \"traversal_chains\": ")
+        .append(count(violations, "traversal-chain"))
         .append("\n");
     sb.append("  },\n");
     sb.append("  \"details\": [\n");
@@ -54,6 +57,7 @@ final class JsonReportWriter {
       sb.append("      \"file\": \"").append(jsonEscape(v.file().toString())).append("\",\n");
       sb.append("      \"line\": ").append(v.line()).append(",\n");
       sb.append("      \"rule\": \"").append(jsonEscape(v.rule())).append("\",\n");
+      sb.append("      \"subject\": \"").append(jsonEscape(v.subject())).append("\",\n");
       sb.append("      \"message\": \"").append(jsonEscape(v.message())).append("\",\n");
       appendAdvice(sb, v.advice());
       sb.append("    }");
