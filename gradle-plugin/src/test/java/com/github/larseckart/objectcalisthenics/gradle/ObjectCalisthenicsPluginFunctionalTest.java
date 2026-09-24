@@ -37,7 +37,9 @@ class ObjectCalisthenicsPluginFunctionalTest {
 
     assertThat(result.getOutput()).contains("Object Calisthenics violations found");
     assertThat(result.getOutput()).contains("METRIC violations=");
+    assertThat(result.getOutput()).contains("class-too-long | src/main/java/Bad.java:1 |");
     assertThat(result.getOutput()).contains("Why: Keep each class focused on one responsibility.");
+    assertThat(projectDir.resolve("build/reports/calisthenics/calisthenics.json")).doesNotExist();
   }
 
   @Test
@@ -222,6 +224,30 @@ class ObjectCalisthenicsPluginFunctionalTest {
     assertThat(json).contains("\"subject\": \"Bad\"");
     assertThat(json).contains("\"advice\"");
     assertThat(json).contains("Keep each class focused on one responsibility.");
+  }
+
+  @Test
+  void independentlyRegisteredReportTaskUsesProjectDirectoryByDefault() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        tasks.register<com.github.larseckart.objectcalisthenics.gradle.ObjectCalisthenicsReportTask>("customReport") {
+            sourceFiles.from(sourceSets.main.get().allJava)
+            classNamePatterns.set(emptyList())
+            json.set(layout.buildDirectory.file("reports/calisthenics/custom.json"))
+            consoleSummary.set(true)
+        }
+        """);
+
+    BuildResult result = runner("customReport").build();
+
+    assertThat(result.getOutput()).contains("class-too-long | src/main/java/Bad.java:1 |");
+    assertThat(projectDir.resolve("build/reports/calisthenics/custom.json")).exists();
   }
 
   @Test

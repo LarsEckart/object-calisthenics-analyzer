@@ -8,6 +8,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Prints concise findings and the backwards-compatible {@code METRIC} lines
@@ -83,9 +84,11 @@ final class MetricsPrinter {
   private static String relativePath(Path file, Path projectDirectory) {
     Path absoluteFile = file.toAbsolutePath().normalize();
     Path absoluteProjectDirectory = projectDirectory.toAbsolutePath().normalize();
-    Path displayedPath = absoluteFile.startsWith(absoluteProjectDirectory)
-        ? absoluteProjectDirectory.relativize(absoluteFile)
-        : absoluteFile;
+    Path displayedPath = absoluteFile;
+    if (absoluteFile.getFileSystem().equals(absoluteProjectDirectory.getFileSystem())
+        && Objects.equals(absoluteFile.getRoot(), absoluteProjectDirectory.getRoot())) {
+      displayedPath = absoluteProjectDirectory.relativize(absoluteFile);
+    }
     return displayedPath.toString().replace(file.getFileSystem().getSeparator(), "/");
   }
 }

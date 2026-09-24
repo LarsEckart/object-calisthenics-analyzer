@@ -6,6 +6,7 @@ import com.github.larseckart.objectcalisthenics.analyzer.RuleSet;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
@@ -23,6 +24,8 @@ import org.gradle.api.tasks.TaskAction;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+
+import javax.inject.Inject;
 
 /**
  * Gradle task that analyses Java source and writes a JSON report.
@@ -52,6 +55,11 @@ public abstract class ObjectCalisthenicsReportTask extends DefaultTask {
 
   @Internal
   public abstract DirectoryProperty getProjectDirectory();
+
+  @Inject
+  public ObjectCalisthenicsReportTask(ProjectLayout projectLayout) {
+    getProjectDirectory().convention(projectLayout.getProjectDirectory());
+  }
 
   @TaskAction
   public void report() {
