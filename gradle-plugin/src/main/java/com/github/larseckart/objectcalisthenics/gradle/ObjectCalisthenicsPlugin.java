@@ -62,7 +62,7 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
           task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
         });
 
-    project.getTasks().register(
+    TaskProvider<ObjectCalisthenicsBaselineTask> baselineTask = project.getTasks().register(
         "objectCalisthenicsBaseline",
         ObjectCalisthenicsBaselineTask.class,
         task -> {
@@ -70,11 +70,13 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
           task.setDescription("Creates an Object Calisthenics baseline from current violations.");
           task.getSourceFiles().setFrom(extension.getSourceSet().map(this::allJava));
           linkRules(task.getRules(), extension.getRules());
+          task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
           task.getBaselineFile().set(extension.getBaselineFile());
           task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
         }
     );
 
+    checkTask.configure(task -> task.mustRunAfter(baselineTask));
     project.getTasks().named("check").configure(check -> check.dependsOn(checkTask));
   }
 

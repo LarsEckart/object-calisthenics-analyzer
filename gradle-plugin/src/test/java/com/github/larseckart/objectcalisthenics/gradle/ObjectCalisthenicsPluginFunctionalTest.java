@@ -128,6 +128,34 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
+  void baselineRespectsClassNameExclusions() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        objectCalisthenics {
+            exclusions {
+                classNamePatterns.add("Bad")
+            }
+        }
+        """);
+
+    BuildResult baselineResult = runner("objectCalisthenicsBaseline").build();
+    assertThat(baselineResult.getOutput()).contains("Wrote 0 Object Calisthenics baseline entries");
+
+    Path baseline = projectDir.resolve("object-calisthenics-baseline.txt");
+    assertThat(baseline).exists();
+    assertThat(Files.readString(baseline)).doesNotContain("Bad.java");
+
+    BuildResult checkResult = runner("objectCalisthenicsCheck").build();
+    assertThat(checkResult.getOutput()).doesNotContain("stale");
+  }
+
+  @Test
   void reportTaskWritesJsonWithoutFailing() throws IOException {
     writeSettings();
     writeBadJavaSource();

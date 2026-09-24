@@ -6,7 +6,9 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
@@ -32,6 +34,9 @@ public abstract class ObjectCalisthenicsBaselineTask extends DefaultTask {
   @Nested
   public abstract ObjectCalisthenicsRules getRules();
 
+  @Input
+  public abstract ListProperty<String> getClassNamePatterns();
+
   @OutputFile
   public abstract RegularFileProperty getBaselineFile();
 
@@ -41,7 +46,8 @@ public abstract class ObjectCalisthenicsBaselineTask extends DefaultTask {
   @TaskAction
   public void createBaseline() {
     ObjectCalisthenicsAnalyzer analyzer = new ObjectCalisthenicsAnalyzer(
-        RuleSetFactory.from(getRules())
+        RuleSetFactory.from(getRules()),
+        getClassNamePatterns().get()
     );
     List<Path> files = getSourceFiles().getFiles().stream()
         .map(File::toPath)
