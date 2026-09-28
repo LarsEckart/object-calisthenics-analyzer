@@ -96,6 +96,7 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
     target.getForbidNonFirstClassCollections().set(source.getForbidNonFirstClassCollections());
     target.getStrictGetterNames().set(source.getStrictGetterNames());
     target.getForbidTraversalChains().set(source.getForbidTraversalChains());
+    target.getPrimitiveObsessionThreshold().set(source.getPrimitiveObsessionThreshold());
     target.getFluentChainMethods().set(source.getFluentChainMethods());
     target.getSafeChainRoots().set(source.getSafeChainRoots());
   }

@@ -24,7 +24,8 @@ class MetricsPrinterTest {
         violation("src/main/java/Zebra.java", 20, "too-many-instance-fields", "late", "late finding"),
         violation("src/main/java/Zebra.java", 3, "too-many-instance-fields", "early", "early finding"),
         violation("src/main/java/Branch.java", 20, "else-used", "choose", "choose uses else"),
-        violation("src/main/java/Apple.java", 12, "too-many-instance-fields", "Apple", "Apple has 3 fields")
+        violation("src/main/java/Apple.java", 12, "too-many-instance-fields", "Apple", "Apple has 3 fields"),
+        violation("src/main/java/Email.java", 4, "primitive-obsession", "email", "email has behaviour")
     ));
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
@@ -33,12 +34,15 @@ class MetricsPrinterTest {
     String output = bytes.toString(StandardCharsets.UTF_8);
     assertThat(output)
         .doesNotContain(projectDirectory.toString())
+        .contains("METRIC primitive_obsessions=1")
         .containsSubsequence(
             "else-used | src/main/java/Branch.java:20 | choose uses else",
+            "primitive-obsession | src/main/java/Email.java:4 | email has behaviour",
             "too-many-instance-fields | src/main/java/Apple.java:12 | Apple has 3 fields",
             "too-many-instance-fields | src/main/java/Zebra.java:3 | early finding",
             "too-many-instance-fields | src/main/java/Zebra.java:20 | late finding",
             "ADVICE else-used",
+            "ADVICE primitive-obsession",
             "ADVICE too-many-instance-fields"
         )
         .containsOnlyOnce("ADVICE too-many-instance-fields")

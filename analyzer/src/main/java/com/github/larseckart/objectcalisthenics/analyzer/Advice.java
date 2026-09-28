@@ -1,6 +1,7 @@
 package com.github.larseckart.objectcalisthenics.analyzer;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Practical guidance for addressing a rule violation.
@@ -63,24 +64,33 @@ public record Advice(String principle, List<String> options, String caution) {
           "Move filtering, matching, and aggregation operations into that type.",
           "Keep the collection wrapper's state limited to its collection."),
       "A collection wrapper should express domain behaviour, not just rename List.");
+  private static final Advice PRIMITIVE_OBSESSION = new Advice(
+      "Give a repeated domain value its own type when behaviour has accumulated around its primitive representation.",
+      List.of(
+          "Introduce a value object named for the concept and move validation and normalization into it.",
+          "Move comparisons, arithmetic, and formatting that belong to the value onto the new type.",
+          "Group primitives that repeatedly travel together when they form one cohesive concept."),
+      "This is a scored heuristic; framework, transport, and configuration values may intentionally remain primitive.");
   private static final Advice UNKNOWN = new Advice(
       "Review the rule and the surrounding design.",
       List.of("Choose the smallest change that improves the design without changing behaviour."),
       "The analyzer found a structural pattern; only code context can confirm the right refactoring.");
+  private static final Map<String, Advice> BY_RULE = Map.ofEntries(
+      Map.entry("class-too-long", CLASS_TOO_LONG),
+      Map.entry("too-many-instance-fields", TOO_MANY_FIELDS),
+      Map.entry("too-many-record-components", TOO_MANY_FIELDS),
+      Map.entry("else-used", ELSE),
+      Map.entry("method-over-nested", NESTING),
+      Map.entry("getter", ACCESSOR),
+      Map.entry("setter", ACCESSOR),
+      Map.entry("non-first-class-collection", FIRST_CLASS_COLLECTION),
+      Map.entry("traversal-chain", TRAVERSAL_CHAIN),
+      Map.entry("primitive-obsession", PRIMITIVE_OBSESSION));
 
   /**
    * Returns the standard guidance for a rule identifier.
    */
   public static Advice forRule(String rule) {
-    return switch (rule) {
-      case "class-too-long" -> CLASS_TOO_LONG;
-      case "too-many-instance-fields", "too-many-record-components" -> TOO_MANY_FIELDS;
-      case "else-used" -> ELSE;
-      case "method-over-nested" -> NESTING;
-      case "getter", "setter" -> ACCESSOR;
-      case "non-first-class-collection" -> FIRST_CLASS_COLLECTION;
-      case "traversal-chain" -> TRAVERSAL_CHAIN;
-      default -> UNKNOWN;
-    };
+    return BY_RULE.getOrDefault(rule, UNKNOWN);
   }
 }

@@ -43,6 +43,9 @@ public abstract class ObjectCalisthenicsRules {
   public abstract Property<Boolean> getForbidTraversalChains();
 
   @Input
+  public abstract Property<Integer> getPrimitiveObsessionThreshold();
+
+  @Input
   public abstract SetProperty<String> getFluentChainMethods();
 
   @Input
@@ -60,6 +63,7 @@ public abstract class ObjectCalisthenicsRules {
     getForbidNonFirstClassCollections().convention(true);
     getStrictGetterNames().convention(false);
     getForbidTraversalChains().convention(true);
+    getPrimitiveObsessionThreshold().convention(5);
     getFluentChainMethods().convention(Set.of());
     getSafeChainRoots().convention(Set.of(
         "System.out", "System.err", "java.lang.System.out", "java.lang.System.err"));

@@ -253,6 +253,61 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
+  void reportTaskIncludesPrimitiveObsessionFindings() throws IOException {
+    String json = runReportTaskWithSourceAndConfig(
+        "Accounts.java",
+        """
+            class Accounts {
+              void register(String email) {
+                validateEmail(email);
+              }
+
+              private void validateEmail(String email) {
+                if (email.isBlank()) {
+                  throw new IllegalArgumentException();
+                }
+              }
+            }
+            """,
+        """
+            rules {
+                primitiveObsessionThreshold.set(5)
+            }
+            """);
+
+    assertThat(json).contains("\"primitive_obsessions\": 1");
+    assertThat(json).contains("\"rule\": \"primitive-obsession\"");
+    assertThat(json).contains("\"subject\": \"email\"");
+  }
+
+  @Test
+  void reportTaskAppliesPrimitiveObsessionThreshold() throws IOException {
+    String json = runReportTaskWithSourceAndConfig(
+        "Accounts.java",
+        """
+            class Accounts {
+              void register(String email) {
+                validateEmail(email);
+              }
+
+              private void validateEmail(String email) {
+                if (email.isBlank()) {
+                  throw new IllegalArgumentException();
+                }
+              }
+            }
+            """,
+        """
+            rules {
+                primitiveObsessionThreshold.set(8)
+            }
+            """);
+
+    assertThat(json).contains("\"primitive_obsessions\": 0");
+    assertThat(json).doesNotContain("\"rule\": \"primitive-obsession\"");
+  }
+
+  @Test
   void exclusionsIgnoreMatchingClassesAndKeepNonMatchingFailures() throws IOException {
     writeSettings();
     writeJavaSource("ApiTypes.java", """

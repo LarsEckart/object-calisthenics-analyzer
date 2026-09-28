@@ -2,6 +2,7 @@ package com.github.larseckart.objectcalisthenics.gradle;
 
 import com.github.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.github.larseckart.objectcalisthenics.analyzer.ObjectCalisthenicsAnalyzer;
+import com.github.larseckart.objectcalisthenics.analyzer.PrimitiveObsessionConfig;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
@@ -47,6 +48,7 @@ public abstract class ObjectCalisthenicsBaselineTask extends DefaultTask {
   public void createBaseline() {
     ObjectCalisthenicsAnalyzer analyzer = new ObjectCalisthenicsAnalyzer(
         RuleSetFactory.from(getRules()),
+        new PrimitiveObsessionConfig(getRules().getPrimitiveObsessionThreshold().get()),
         getClassNamePatterns().get()
     );
     List<Path> files = getSourceFiles().getFiles().stream()

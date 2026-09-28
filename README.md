@@ -48,6 +48,7 @@ objectCalisthenics {
         forbidNonFirstClassCollections.set(true)
         strictGetterNames.set(false)
         forbidTraversalChains.set(true)
+        primitiveObsessionThreshold.set(5)
         fluentChainMethods.set(setOf("with", "build"))
         safeChainRoots.set(setOf("System.out", "System.err"))
     }
@@ -78,12 +79,14 @@ unchecked.
 | `strictGetterNames` | `false` | Flag every getter-shaped name, even computed queries. |
 | `forbidNonFirstClassCollections` | `true` | Forbid a collection field plus any other field in the same class. |
 | `forbidTraversalChains` | `true` | Forbid chains through collaborators (`a.b().c()`). |
+| `primitiveObsessionThreshold` | `5` | Minimum evidence score for a repeated primitive/String concept connected through fields or method-argument flow; `-1` disables the heuristic. |
 | `fluentChainMethods` | `[]` | Method names that continue a fluent/value operation. |
 | `safeChainRoots` | `System.out`, `System.err` | Receivers that may start a multi-step chain. |
 | `reports.json` | — | JSON report path. |
 | `reports.consoleSummary` | `true` | Print a console summary. |
 
-Suppress a per-type exception with `@SuppressWarnings("calisthenics:fields")`.
+Suppress a per-type exception with `@SuppressWarnings("calisthenics:fields")`
+or `@SuppressWarnings("calisthenics:primitive-obsession")`.
 
 ## Tasks
 
@@ -111,11 +114,33 @@ findings.
 - A class/record that owns a collection or array may not own any other instance
   field/component.
 - Do not traverse through collaborators in receiver chains.
+- Wrap repeated primitive and String concepts when validation, transformation,
+  comparison, or arithmetic behaviour has accumulated around them.
+
+The primitive-obsession rule groups fields, record components, and callable
+parameters by name and primitive type. It reports one finding per concept only
+when the concept is declared more than once and has behavioural evidence.
+Enums and single-component primitive records already encapsulate their values,
+so they are not inspected. Primitive arrays and array `offset`/`length`
+coordinates are left to collection and parser rules. Its score is additive:
+
+| Evidence | Score |
+|----------|------:|
+| Repeated declaration | 2 |
+| Accepted by a private helper | 2 |
+| Validation or conditional use | 3 |
+| Normalization, parsing, or formatting | 2 |
+| Comparison with a literal | 2 |
+| Numeric arithmetic | 2 |
+| Validation or conditional use in multiple methods | 3 |
+| Repeatedly travels with another primitive concept | 2 |
+
+The finding includes its score and evidence. This is a design prompt rather
+than proof that a value object is required; framework, transport, and
+configuration values may intentionally remain primitive.
 
 ## Rules not yet implemented
 
-- **Wrap all primitives and strings.** Needs project-specific configuration to
-  distinguish domain values from framework or configuration types.
 - **Don't abbreviate.** Needs a configurable list of banned abbreviations.
 
 ## Articles

@@ -2,6 +2,7 @@ package com.github.larseckart.objectcalisthenics.gradle;
 
 import com.github.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.github.larseckart.objectcalisthenics.analyzer.ObjectCalisthenicsAnalyzer;
+import com.github.larseckart.objectcalisthenics.analyzer.PrimitiveObsessionConfig;
 import com.github.larseckart.objectcalisthenics.analyzer.RuleSet;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -62,6 +63,7 @@ public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
     RuleSet ruleSet = RuleSetFactory.from(getRules());
     ObjectCalisthenicsAnalyzer analyzer = new ObjectCalisthenicsAnalyzer(
         ruleSet,
+        new PrimitiveObsessionConfig(getRules().getPrimitiveObsessionThreshold().get()),
         getClassNamePatterns().get()
     );
 

@@ -34,11 +34,20 @@ public class ObjectCalisthenicsAnalyzer {
   private final FieldChecker fieldChecker;
   private final MethodChecker methodChecker;
   private final TraversalChainChecker traversalChainChecker;
+  private final PrimitiveObsessionChecker primitiveObsessionChecker;
 
   private record ClassNamePattern(String source, Pattern pattern) {
   }
 
   public ObjectCalisthenicsAnalyzer(RuleSet rules, List<String> classNamePatterns) {
+    this(rules, PrimitiveObsessionConfig.defaults(), classNamePatterns);
+  }
+
+  public ObjectCalisthenicsAnalyzer(
+      RuleSet rules,
+      PrimitiveObsessionConfig primitiveObsession,
+      List<String> classNamePatterns
+  ) {
     this.rules = rules;
     this.classNamePatterns = classNamePatterns.stream()
         .map(pattern -> new ClassNamePattern(pattern, Pattern.compile(pattern)))
@@ -49,6 +58,7 @@ public class ObjectCalisthenicsAnalyzer {
     this.fieldChecker = new FieldChecker(rules);
     this.methodChecker = new MethodChecker(rules);
     this.traversalChainChecker = new TraversalChainChecker(rules);
+    this.primitiveObsessionChecker = new PrimitiveObsessionChecker(primitiveObsession.threshold());
   }
 
   public ObjectCalisthenicsAnalyzer(RuleSet rules) {
@@ -148,5 +158,6 @@ public class ObjectCalisthenicsAnalyzer {
   private void checkType(TypeDeclaration<?> type, Path file, List<Violation> violations) {
     classLengthChecker.check(type, file, violations::add);
     fieldChecker.check(type, file, violations::add);
+    primitiveObsessionChecker.check(type, file, violations::add);
   }
 }

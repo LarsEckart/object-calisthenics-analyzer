@@ -42,6 +42,9 @@ final class MetricsPrinter {
     long traversalChains = result.violations().stream()
         .filter(v -> v.rule().equals("traversal-chain"))
         .count();
+    long primitiveObsessions = result.violations().stream()
+        .filter(v -> v.rule().equals("primitive-obsession"))
+        .count();
 
     out.println("METRIC violations=" + result.totalViolations());
     out.println("METRIC classes_over_50=" + classesOver50);
@@ -51,6 +54,7 @@ final class MetricsPrinter {
     out.println("METRIC getter_setter_methods=" + getterSetters);
     out.println("METRIC non_first_class_collections=" + nonFirstClassCollections);
     out.println("METRIC traversal_chains=" + traversalChains);
+    out.println("METRIC primitive_obsessions=" + primitiveObsessions);
 
     List<Violation> violations = result.violations().stream()
         .sorted(Comparator.comparing(Violation::rule)
