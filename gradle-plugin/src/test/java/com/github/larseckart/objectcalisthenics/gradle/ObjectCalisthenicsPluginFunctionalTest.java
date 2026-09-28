@@ -40,7 +40,9 @@ class ObjectCalisthenicsPluginFunctionalTest {
     BuildResult result = runCheck();
 
     assertThat(result.getOutput()).contains("METRIC violations=2");
-    assertThat(result.getOutput()).contains("ignoring failures as configured");
+    assertThat(result.getOutput()).contains(
+        "Object Calisthenics: 2 violations found; ignoring failures as configured.");
+    assertThat(result.getOutput()).doesNotContain("new violation(s)");
   }
 
   @Test
@@ -76,6 +78,11 @@ class ObjectCalisthenicsPluginFunctionalTest {
     BuildResult failedCheck = runCheckAndFail();
     assertThat(failedCheck.getOutput())
         .contains("Object Calisthenics violations found: 1 new, 2 baselined");
+
+    writeBuildScript("ignoreFailures.set(true)");
+    BuildResult ignoredCheck = runCheck();
+    assertThat(ignoredCheck.getOutput())
+        .contains("Object Calisthenics violations found: 1 new violation(s); ignoring failures as configured.");
   }
 
   @Test
@@ -494,7 +501,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   private void assertCheckOutputContainsHeadlineFailure(BuildResult result) {
-    assertThat(result.getOutput()).contains("Object Calisthenics violations found");
+    assertThat(result.getOutput()).contains("Object Calisthenics: 2 violations found");
     assertThat(result.getOutput()).contains("METRIC violations=");
     assertThat(result.getOutput()).contains("class-too-long | src/main/java/Bad.java:1 |");
   }

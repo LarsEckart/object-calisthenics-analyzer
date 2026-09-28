@@ -22,6 +22,7 @@ import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -82,8 +83,10 @@ public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
       );
     }
 
+    Path baselineFile = getBaselineFile().get().getAsFile().toPath();
+    boolean hasBaseline = Files.exists(baselineFile);
     Baseline baseline = Baseline.load(
-        getBaselineFile().get().getAsFile().toPath(),
+        baselineFile,
         getProjectDirectory().get().getAsFile().toPath()
     );
     List<Baseline.Entry> current = baseline.entriesFor(result.violations());
@@ -98,17 +101,29 @@ public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
       );
     }
 
-    if (!newViolations.isEmpty() && !getIgnoreFailures().get()) {
-      throw new GradleException(
-          "Object Calisthenics violations found: " + newViolations.size()
-              + " new, " + (current.size() - newViolations.size()) + " baselined");
+    reportViolations(current.size(), newViolations.size(), hasBaseline);
+  }
+
+  private void reportViolations(int total, int newCount, boolean hasBaseline) {
+    if (newCount == 0) {
+      return;
     }
 
-    if (!newViolations.isEmpty()) {
-      getLogger().warn(
-          "Object Calisthenics violations found: {} new violation(s); ignoring failures as configured.",
-          newViolations.size()
-      );
+    if (!getIgnoreFailures().get()) {
+      throw new GradleException(hasBaseline
+          ? "Object Calisthenics violations found: " + newCount + " new, " + (total - newCount) + " baselined"
+          : "Object Calisthenics: " + total + " violations found");
     }
+
+    if (!hasBaseline) {
+      getLogger().warn(
+          "Object Calisthenics: {} violations found; ignoring failures as configured.", total);
+      return;
+    }
+
+    getLogger().warn(
+        "Object Calisthenics violations found: {} new violation(s); ignoring failures as configured.",
+        newCount
+    );
   }
 }
