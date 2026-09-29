@@ -91,6 +91,10 @@ or `@SuppressWarnings("calisthenics:primitive-obsession")`.
 ## Tasks
 
 - `objectCalisthenicsCheck` – analyse and fail on new violations.
+- `objectCalisthenicsCheckChanged` – check staged, unstaged, and untracked
+  Java files in the configured source set. Requires Git; does not run as part of
+  `check`. Skips when no Java files have changed. A baseline still hides known
+  findings, but this task does not warn about stale entries in untouched files.
 - `objectCalisthenicsBaseline` – write current violations to the baseline file.
 - `objectCalisthenicsReport` – write the JSON report without failing.
 - `check` depends on `objectCalisthenicsCheck`.
@@ -102,7 +106,13 @@ To adopt the plugin on an existing codebase without fixing everything first:
 ```
 
 Commit the generated baseline file. Future checks then fail only for new
-findings.
+findings. To check only local changes instead, run:
+
+```shell
+./gradlew objectCalisthenicsCheckChanged
+```
+
+This checks whole changed files, not just changed lines or changes since a branch.
 
 ## Supported rules
 

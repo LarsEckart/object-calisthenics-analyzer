@@ -1,11 +1,16 @@
 package com.github.larseckart.objectcalisthenics.gradle;
 
 import org.gradle.api.Plugin;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.api.provider.Provider;
+
+import java.io.File;
+import java.util.Set;
 
 /**
  * Gradle plugin that analyses Java source code for Object Calisthenics
@@ -50,6 +55,23 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
           task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
           task.getIgnoreFailures().set(extension.getIgnoreFailures());
         });
+
+    Provider<Set<File>> changedFiles = project.getProviders().of(GitChangedJavaFiles.class,
+        spec -> spec.getParameters().getProjectDirectory().set(project.getProjectDir().getAbsolutePath()));
+    Provider<FileCollection> javaSources = extension.getSourceSet().map(SourceSet::getAllJava);
+    project.getTasks().register("objectCalisthenicsCheckChanged", ObjectCalisthenicsCheckTask.class, task -> {
+      task.setGroup("Verification");
+      task.setDescription("Checks staged, unstaged, and untracked Java source files for violations.");
+      task.getSourceFiles().setFrom(changedFiles.zip(javaSources, GitChangedJavaFiles::inSourceSet));
+      linkRules(task.getRules(), extension.getRules());
+      task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
+      task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
+      task.getBaselineFile().set(extension.getBaselineFile());
+      task.getBaselineFiles().setFrom(extension.getBaselineFile());
+      task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
+      task.getIgnoreFailures().set(extension.getIgnoreFailures());
+      task.getWarnAboutStaleBaselineEntries().set(false);
+    });
 
     TaskProvider<ObjectCalisthenicsReportTask> reportTask = project.getTasks()
         .register("objectCalisthenicsReport", ObjectCalisthenicsReportTask.class, task -> {

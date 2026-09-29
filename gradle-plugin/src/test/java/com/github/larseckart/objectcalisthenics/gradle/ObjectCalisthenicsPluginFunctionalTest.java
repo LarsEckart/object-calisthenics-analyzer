@@ -2,12 +2,15 @@ package com.github.larseckart.objectcalisthenics.gradle;
 
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
+import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,6 +46,91 @@ class ObjectCalisthenicsPluginFunctionalTest {
     assertThat(result.getOutput()).contains(
         "Object Calisthenics: 2 violations found; ignoring failures as configured.");
     assertThat(result.getOutput()).doesNotContain("new violation(s)");
+  }
+
+  @Test
+  void changedCheckOnlyAnalyzesUntrackedJavaInTheSourceSet() throws IOException, InterruptedException {
+    writeSettings();
+    writeBadJavaSource();
+    writeBuildScript();
+    initializeGitAndCommit();
+    writeJavaSource("New.java", "class New { private int value; public int getValue() { return value; } }");
+    Files.writeString(projectDir.resolve("Outside.java"),
+        "class Outside { private int value; public int getValue() { return value; } }");
+
+    BuildResult result = runner("objectCalisthenicsCheckChanged")
+        .withArguments("objectCalisthenicsCheckChanged", "--configuration-cache")
+        .buildAndFail();
+
+    assertThat(result.getOutput()).contains("Object Calisthenics: 1 violations found");
+    assertThat(result.getOutput()).contains("Configuration cache entry stored");
+    assertThat(result.getOutput()).doesNotContain("Bad.java:").doesNotContain("Outside.java:");
+
+    Files.delete(projectDir.resolve("src/main/java/New.java"));
+    BuildResult noChanges = runner("objectCalisthenicsCheckChanged")
+        .withArguments("objectCalisthenicsCheckChanged", "--configuration-cache")
+        .build();
+    assertThat(noChanges.task(":objectCalisthenicsCheckChanged").getOutcome())
+        .isEqualTo(TaskOutcome.NO_SOURCE);
+  }
+
+  @Test
+  void changedCheckIncludesStagedAndUnstagedChanges() throws IOException, InterruptedException {
+    writeSettings();
+    writeBadJavaSource();
+    writeJavaSource("Unstaged.java", "class Unstaged {}\n");
+    writeBuildScript();
+    initializeGitAndCommit();
+    Path badSource = projectDir.resolve("src/main/java/Bad.java");
+    Files.writeString(badSource, "\n" + Files.readString(badSource));
+    git(List.of("add", "src/main/java/Bad.java"));
+    Files.writeString(projectDir.resolve("src/main/java/Unstaged.java"),
+        "class Unstaged { private int value; public int getValue() { return value; } }\n");
+
+    BuildResult result = runner("objectCalisthenicsCheckChanged").buildAndFail();
+
+    assertThat(result.getOutput()).contains("Object Calisthenics: 3 violations found");
+    assertThat(result.getOutput()).contains("Bad.java:", "Unstaged.java:");
+  }
+
+  @Test
+  void changedCheckSkipsWhenNoJavaFilesChanged() throws IOException, InterruptedException {
+    writeSettings();
+    writeBadJavaSource();
+    writeBuildScript();
+    initializeGitAndCommit();
+
+    BuildResult result = runner("objectCalisthenicsCheckChanged").build();
+
+    assertThat(result.task(":objectCalisthenicsCheckChanged").getOutcome()).isEqualTo(TaskOutcome.NO_SOURCE);
+  }
+
+  @Test
+  void changedCheckDoesNotReportStaleEntriesFromUntouchedFiles() throws IOException, InterruptedException {
+    writeSettings();
+    writeBadJavaSource();
+    writeJavaSource("Clean.java", "class Clean {}\n");
+    writeBuildScript("ignoreFailures.set(true)");
+    initializeGitAndCommit();
+    runner("objectCalisthenicsBaseline").build();
+    Files.writeString(projectDir.resolve("src/main/java/Clean.java"),
+        "class Clean { private int value; public int getValue() { return value; } }\n");
+
+    BuildResult result = runner("objectCalisthenicsCheckChanged").build();
+
+    assertThat(result.getOutput()).contains("1 new violation(s)");
+    assertThat(result.getOutput()).doesNotContain("stale entries");
+  }
+
+  @Test
+  void changedCheckFailsClearlyOutsideGit() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    writeBuildScript();
+
+    BuildResult result = runner("objectCalisthenicsCheckChanged").buildAndFail();
+
+    assertThat(result.getOutput()).contains("Cannot select changed Java files");
   }
 
   @Test
@@ -466,6 +554,20 @@ class ObjectCalisthenicsPluginFunctionalTest {
             %s
         }
         """.formatted(objectCalisthenicsBlock.stripIndent()));
+  }
+
+  private void initializeGitAndCommit() throws IOException, InterruptedException {
+    git(List.of("init", "-q"));
+    git(List.of("add", "."));
+    git(List.of("-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "initial"));
+  }
+
+  private void git(List<String> arguments) throws IOException, InterruptedException {
+    List<String> command = new ArrayList<>(List.of("git", "-C", projectDir.toString()));
+    command.addAll(arguments);
+    Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
+    String output = new String(process.getInputStream().readAllBytes());
+    assertThat(process.waitFor()).as(output).isZero();
   }
 
   private GradleRunner runner(String task) {

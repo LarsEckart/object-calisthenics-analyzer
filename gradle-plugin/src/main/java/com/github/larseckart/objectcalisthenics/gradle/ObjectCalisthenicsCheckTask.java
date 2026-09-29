@@ -59,6 +59,13 @@ public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
   @Input
   public abstract Property<Boolean> getIgnoreFailures();
 
+  @Input
+  public abstract Property<Boolean> getWarnAboutStaleBaselineEntries();
+
+  public ObjectCalisthenicsCheckTask() {
+    getWarnAboutStaleBaselineEntries().convention(true);
+  }
+
   @TaskAction
   public void check() {
     RuleSet ruleSet = RuleSetFactory.from(getRules());
@@ -93,7 +100,7 @@ public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
     List<Baseline.Entry> newViolations = baseline.newEntries(current);
     List<Baseline.Entry> staleEntries = baseline.staleEntries(current);
 
-    if (!staleEntries.isEmpty()) {
+    if (getWarnAboutStaleBaselineEntries().get() && !staleEntries.isEmpty()) {
       getLogger().warn(
           "Object Calisthenics baseline has {} stale entr{}; regenerate it with objectCalisthenicsBaseline.",
           staleEntries.size(),
