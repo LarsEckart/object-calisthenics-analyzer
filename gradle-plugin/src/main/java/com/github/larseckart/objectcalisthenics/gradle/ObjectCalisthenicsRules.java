@@ -1,10 +1,12 @@
 package com.github.larseckart.objectcalisthenics.gradle;
 
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Input;
 
 import javax.inject.Inject;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -46,6 +48,12 @@ public abstract class ObjectCalisthenicsRules {
   public abstract Property<Integer> getPrimitiveObsessionThreshold();
 
   @Input
+  public abstract SetProperty<String> getAllowedRawTypes();
+
+  @Input
+  public abstract ListProperty<String> getBoundaryClassNamePatterns();
+
+  @Input
   public abstract SetProperty<String> getFluentChainMethods();
 
   @Input
@@ -64,6 +72,11 @@ public abstract class ObjectCalisthenicsRules {
     getStrictGetterNames().convention(false);
     getForbidTraversalChains().convention(true);
     getPrimitiveObsessionThreshold().convention(5);
+    getAllowedRawTypes().convention(Set.of(
+        "boolean", "byte", "char", "double", "float", "int", "long", "short",
+        "Boolean", "Byte", "Character", "Double", "Float", "Integer", "Long", "Short",
+        "String"));
+    getBoundaryClassNamePatterns().convention(List.of());
     getFluentChainMethods().convention(Set.of());
     getSafeChainRoots().convention(Set.of(
         "System.out", "System.err", "java.lang.System.out", "java.lang.System.err"));

@@ -403,6 +403,32 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
+  void reportTaskAppliesRawTypePolicyAndBoundaryExceptions() throws IOException {
+    String json = runReportTaskWithSourceAndConfig(
+        "Customers.java",
+        """
+            class Customer {
+              private String email;
+            }
+
+            record CustomerRequest(String email, boolean active) {
+            }
+            """,
+        """
+            rules {
+                primitiveObsessionThreshold.set(-1)
+                allowedRawTypes.set(setOf("boolean"))
+                boundaryClassNamePatterns.add(".*Request$")
+            }
+            """);
+
+    assertThat(json).contains("\"raw_domain_primitives\": 1");
+    assertThat(json).contains("\"rule\": \"raw-domain-primitive\"");
+    assertThat(details(json)).contains("Customer.email uses raw String");
+    assertThat(details(json)).doesNotContain("CustomerRequest");
+  }
+
+  @Test
   void exclusionsIgnoreMatchingClassesAndKeepNonMatchingFailures() throws IOException {
     writeSettings();
     writeJavaSource("ApiTypes.java", """

@@ -53,6 +53,9 @@ final class JsonReportWriter {
         .append(",\n");
     sb.append("    \"primitive_obsessions\": ")
         .append(count(violations, "primitive-obsession"))
+        .append(",\n");
+    sb.append("    \"raw_domain_primitives\": ")
+        .append(count(violations, "raw-domain-primitive"))
         .append("\n");
     sb.append("  },\n");
     sb.append("  \"excluded_classes\": [\n");

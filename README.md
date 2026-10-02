@@ -50,6 +50,8 @@ objectCalisthenics {
         strictGetterNames.set(false)
         forbidTraversalChains.set(true)
         primitiveObsessionThreshold.set(5)
+        allowedRawTypes.set(setOf("boolean", "int"))
+        boundaryClassNamePatterns.add(".*(Request|Response)$")
         fluentChainMethods.set(setOf("with", "build"))
         safeChainRoots.set(setOf("System.out", "System.err"))
     }
@@ -81,13 +83,16 @@ unchecked.
 | `forbidNonFirstClassCollections` | `true` | Forbid a collection field plus any other field in the same class. |
 | `forbidTraversalChains` | `true` | Forbid chains through collaborators (`a.b().c()`). |
 | `primitiveObsessionThreshold` | `5` | Minimum evidence score for a repeated primitive/String concept connected through fields or method-argument flow; `-1` disables the heuristic. |
+| `allowedRawTypes` | All primitive, boxed primitive, and `String` types | Raw types permitted in fields, record components, and callable parameters. Set this to a narrower set to opt into strict policy findings for every other raw type. |
+| `boundaryClassNamePatterns` | `[]` | Regexes matching simple class/record names where raw types are intentional, such as transport, persistence, framework, or configuration boundaries. |
 | `fluentChainMethods` | `[]` | Method names that continue a fluent/value operation. |
 | `safeChainRoots` | `System.out`, `System.err` | Receivers that may start a multi-step chain. |
 | `reports.json` | — | JSON report path. |
 | `reports.consoleSummary` | `true` | Print a console summary. |
 
-Suppress a per-type exception with `@SuppressWarnings("calisthenics:fields")`
-or `@SuppressWarnings("calisthenics:primitive-obsession")`.
+Suppress a per-type exception with `@SuppressWarnings("calisthenics:fields")`,
+`@SuppressWarnings("calisthenics:primitive-obsession")`, or
+`@SuppressWarnings("calisthenics:raw-domain-primitive")`.
 
 ## Tasks
 
@@ -133,6 +138,34 @@ This checks whole changed files, not just changed lines or changes since a branc
 - Do not traverse through collaborators in receiver chains.
 - Wrap repeated primitive and String concepts when validation, transformation,
   comparison, or arithmetic behaviour has accumulated around them.
+- Enforce an opt-in policy for raw primitive, boxed primitive, and `String`
+  declarations outside configured boundary types.
+
+The strict raw-type policy is separate from the heuristic. By default,
+`allowedRawTypes` contains every supported raw type, so it produces no
+findings. Narrow the set to the technical types that may remain raw in domain
+code. Every field, record component, constructor parameter, and method
+parameter using another raw type then produces a `raw-domain-primitive`
+finding. Static fields, arrays, and single-component primitive record wrappers
+are not inspected. `boundaryClassNamePatterns` matches simple type names and
+keeps intentional transport, persistence, framework, or configuration data
+out of this policy without disabling other rules for those types.
+
+For example, this policy permits raw booleans and integers in domain code,
+allows all raw representations in request/response records, and reports raw
+`String`, `long`, and other declarations elsewhere:
+
+```kotlin
+rules {
+    allowedRawTypes.set(setOf("boolean", "int"))
+    boundaryClassNamePatterns.add(".*(Request|Response)$")
+}
+```
+
+Policy findings suggest a meaningful value object only when the declaration
+represents a domain concept. Add an allowed type or boundary exception when a
+raw representation is intentional; the rule does not claim every primitive
+needs a wrapper.
 
 The primitive-obsession rule groups fields, record components, and callable
 parameters by name and primitive type. It reports one finding per concept only

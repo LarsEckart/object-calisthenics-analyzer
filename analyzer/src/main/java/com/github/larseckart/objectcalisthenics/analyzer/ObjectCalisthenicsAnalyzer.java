@@ -35,6 +35,7 @@ public class ObjectCalisthenicsAnalyzer {
   private final MethodChecker methodChecker;
   private final TraversalChainChecker traversalChainChecker;
   private final PrimitiveObsessionChecker primitiveObsessionChecker;
+  private final RawTypePolicyChecker rawTypePolicyChecker;
 
   private record ClassNamePattern(String source, Pattern pattern) {
   }
@@ -59,6 +60,7 @@ public class ObjectCalisthenicsAnalyzer {
     this.methodChecker = new MethodChecker(rules);
     this.traversalChainChecker = new TraversalChainChecker(rules);
     this.primitiveObsessionChecker = new PrimitiveObsessionChecker(primitiveObsession.threshold());
+    this.rawTypePolicyChecker = new RawTypePolicyChecker(primitiveObsession);
   }
 
   public ObjectCalisthenicsAnalyzer(RuleSet rules) {
@@ -159,5 +161,6 @@ public class ObjectCalisthenicsAnalyzer {
     classLengthChecker.check(type, file, violations::add);
     fieldChecker.check(type, file, violations::add);
     primitiveObsessionChecker.check(type, file, violations::add);
+    rawTypePolicyChecker.check(type, file, violations::add);
   }
 }

@@ -48,7 +48,10 @@ public abstract class ObjectCalisthenicsBaselineTask extends DefaultTask {
   public void createBaseline() {
     ObjectCalisthenicsAnalyzer analyzer = new ObjectCalisthenicsAnalyzer(
         RuleSetFactory.from(getRules()),
-        new PrimitiveObsessionConfig(getRules().getPrimitiveObsessionThreshold().get()),
+        new PrimitiveObsessionConfig(
+            getRules().getPrimitiveObsessionThreshold().get(),
+            getRules().getAllowedRawTypes().get(),
+            getRules().getBoundaryClassNamePatterns().get()),
         getClassNamePatterns().get()
     );
     List<Path> files = getSourceFiles().getFiles().stream()

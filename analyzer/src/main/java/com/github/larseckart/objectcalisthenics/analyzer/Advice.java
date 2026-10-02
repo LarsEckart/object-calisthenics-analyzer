@@ -71,6 +71,13 @@ public record Advice(String principle, List<String> options, String caution) {
           "Move comparisons, arithmetic, and formatting that belong to the value onto the new type.",
           "Group primitives that repeatedly travel together when they form one cohesive concept."),
       "This is a scored heuristic; framework, transport, and configuration values may intentionally remain primitive.");
+  private static final Advice RAW_DOMAIN_PRIMITIVE = new Advice(
+      "Represent domain concepts with meaningful types instead of raw primitives or strings.",
+      List.of(
+          "Introduce a value object named for the domain concept when the value has domain meaning.",
+          "Move validation, normalization, comparison, or formatting that belongs to the value into that type.",
+          "Allow the raw representation explicitly when the declaration is intentionally technical data."),
+      "Not every raw value needs a wrapper; configure each transport, framework, configuration, or persistence boundary as an exception.");
   private static final Advice UNKNOWN = new Advice(
       "Review the rule and the surrounding design.",
       List.of("Choose the smallest change that improves the design without changing behaviour."),
@@ -85,7 +92,8 @@ public record Advice(String principle, List<String> options, String caution) {
       Map.entry("setter", ACCESSOR),
       Map.entry("non-first-class-collection", FIRST_CLASS_COLLECTION),
       Map.entry("traversal-chain", TRAVERSAL_CHAIN),
-      Map.entry("primitive-obsession", PRIMITIVE_OBSESSION));
+      Map.entry("primitive-obsession", PRIMITIVE_OBSESSION),
+      Map.entry("raw-domain-primitive", RAW_DOMAIN_PRIMITIVE));
 
   /**
    * Returns the standard guidance for a rule identifier.

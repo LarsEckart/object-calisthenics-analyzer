@@ -67,7 +67,10 @@ public abstract class ObjectCalisthenicsReportTask extends DefaultTask {
     RuleSet ruleSet = RuleSetFactory.from(getRules());
     ObjectCalisthenicsAnalyzer analyzer = new ObjectCalisthenicsAnalyzer(
         ruleSet,
-        new PrimitiveObsessionConfig(getRules().getPrimitiveObsessionThreshold().get()),
+        new PrimitiveObsessionConfig(
+            getRules().getPrimitiveObsessionThreshold().get(),
+            getRules().getAllowedRawTypes().get(),
+            getRules().getBoundaryClassNamePatterns().get()),
         getClassNamePatterns().get()
     );
 
