@@ -100,11 +100,23 @@ objectCalisthenics {
       "file": "src/main/java/org/example/ApiResource.java",
       "line": 42,
       "rule": "class-too-long",
-      "message": "ApiResource has 943 meaningful lines (limit 50)"
+      "subject": "ApiResource",
+      "message": "ApiResource has 943 meaningful lines (limit 50)",
+      "advice": {
+        "principle": "Keep each class focused on one responsibility.",
+        "options": ["Split the class by responsibility, not just by line count."],
+        "caution": "Do not split a cohesive class merely to meet the line limit."
+      }
     }
   ]
 }
 ```
+
+Each detail always includes stable rule-level `advice`. Rules that can extract
+useful AST evidence may also include an optional `context` object with a stable
+`kind`, a summary, related source elements, a non-prescriptive suggestion, and
+a caution about the judgement still required. The console renders the same
+context directly below its finding.
 
 For backwards compatibility with `.auto/measure.sh`, the task could also print:
 

@@ -4,6 +4,7 @@ import com.github.larseckart.objectcalisthenics.analyzer.Advice;
 import com.github.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.github.larseckart.objectcalisthenics.analyzer.ExcludedClass;
 import com.github.larseckart.objectcalisthenics.analyzer.Violation;
+import com.github.larseckart.objectcalisthenics.analyzer.ViolationContext;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -67,6 +68,12 @@ final class JsonReportWriter {
       sb.append("      \"subject\": \"").append(jsonEscape(v.subject())).append("\",\n");
       sb.append("      \"message\": \"").append(jsonEscape(v.message())).append("\",\n");
       appendAdvice(sb, v.advice());
+      if (v.context().isPresent()) {
+        sb.append(",\n");
+        appendContext(sb, v.context().orElseThrow());
+      } else {
+        sb.append("\n");
+      }
       sb.append("    }");
       if (i < violations.size() - 1) {
         sb.append(",");
@@ -90,6 +97,24 @@ final class JsonReportWriter {
     }
     sb.append("],\n");
     sb.append("        \"caution\": \"").append(jsonEscape(advice.caution())).append("\"\n");
+    sb.append("      }");
+  }
+
+  private static void appendContext(StringBuilder sb, ViolationContext context) {
+    sb.append("      \"context\": {\n");
+    sb.append("        \"kind\": \"").append(jsonEscape(context.kind())).append("\",\n");
+    sb.append("        \"summary\": \"").append(jsonEscape(context.summary())).append("\",\n");
+    sb.append("        \"related_code\": [");
+    for (int i = 0; i < context.relatedCode().size(); i++) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append("\"").append(jsonEscape(context.relatedCode().get(i))).append("\"");
+    }
+    sb.append("],\n");
+    sb.append("        \"suggestion\": \"")
+        .append(jsonEscape(context.suggestion())).append("\",\n");
+    sb.append("        \"caution\": \"").append(jsonEscape(context.caution())).append("\"\n");
     sb.append("      }\n");
   }
 

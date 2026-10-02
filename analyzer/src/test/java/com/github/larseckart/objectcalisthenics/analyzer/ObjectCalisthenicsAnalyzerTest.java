@@ -63,6 +63,13 @@ class ObjectCalisthenicsAnalyzerTest {
 
     assertThat(fieldViolations).hasSize(1);
     assertThat(fieldViolations.get(0).message()).contains("TooManyFieldsClass");
+    assertThat(fieldViolations.get(0).context())
+        .contains(new ViolationContext(
+            "field-list",
+            "The type declares 3 instance fields.",
+            List.of("String first", "String second", "String third"),
+            "Look for a cohesive subset of these values that changes together or supports the same behaviour.",
+            "Only domain knowledge can determine whether any of these fields belong in a separate type."));
   }
 
   @Test
@@ -110,8 +117,19 @@ class ObjectCalisthenicsAnalyzerTest {
   void detectsDeeplyNestedMethod() {
     AnalysisResult result = analyzer.analyze(samplesDir.resolve("DeepNestingMethod.java").getParent());
 
-    assertThat(result.violations())
-        .anyMatch(v -> v.rule().equals("method-over-nested") && v.message().contains("handle"));
+    Violation violation = result.violations().stream()
+        .filter(v -> v.rule().equals("method-over-nested"))
+        .findFirst()
+        .orElseThrow();
+
+    assertThat(violation.message()).contains("handle");
+    assertThat(violation.context())
+        .contains(new ViolationContext(
+            "nested-block",
+            "The method reaches nesting depth 2 at while (value > 0) at line 7.",
+            List.of("while (value > 0) at line 7"),
+            "Consider extracting this block into a method named for the work it performs.",
+            "Domain judgement is needed to choose a useful boundary and preserve side effects and error handling."));
   }
 
   @Test
@@ -122,6 +140,28 @@ class ObjectCalisthenicsAnalyzerTest {
         .toList();
 
     assertThat(getterSetter).hasSize(2);
+    assertThat(getterSetter.stream()
+        .filter(violation -> violation.rule().equals("getter"))
+        .findFirst()
+        .orElseThrow()
+        .context())
+        .contains(new ViolationContext(
+            "accessor-pattern",
+            "The method directly returns field 'name'.",
+            List.of("return name"),
+            "Consider reviewing callers to see whether an intent-revealing operation could replace this read.",
+            "Domain judgement is needed because read-only access can be appropriate at DTO and display boundaries."));
+    assertThat(getterSetter.stream()
+        .filter(violation -> violation.rule().equals("setter"))
+        .findFirst()
+        .orElseThrow()
+        .context())
+        .contains(new ViolationContext(
+            "accessor-pattern",
+            "The method has a setter-shaped name, void return type, and one parameter.",
+            List.of("String name"),
+            "Consider reviewing callers to identify the operation they expect this state change to perform.",
+            "Domain judgement is needed to name that operation and to recognize framework binding boundaries."));
   }
 
   @Test

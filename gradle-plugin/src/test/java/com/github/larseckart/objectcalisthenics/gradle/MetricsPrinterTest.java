@@ -2,6 +2,7 @@ package com.github.larseckart.objectcalisthenics.gradle;
 
 import com.github.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.github.larseckart.objectcalisthenics.analyzer.Violation;
+import com.github.larseckart.objectcalisthenics.analyzer.ViolationContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -62,6 +63,38 @@ class MetricsPrinterTest {
     assertThat(bytes.toString(StandardCharsets.UTF_8))
         .contains("else-used | ../shared/Shared.java:7 | choose uses else")
         .doesNotContain(siblingSource.toString());
+  }
+
+  @Test
+  void printsSourceContextAfterItsFindingAndKeepsRuleAdvice() {
+    Violation violation = new Violation(
+        projectDirectory.resolve("src/main/java/Order.java"),
+        4,
+        "too-many-instance-fields",
+        "Order",
+        "Order has 3 instance fields (limit 2)")
+        .withContext(new ViolationContext(
+            "field-list",
+            "The type declares 3 instance fields.",
+            List.of("Customer customer", "Money total", "Clock clock"),
+            "Look for a cohesive subset of these values.",
+            "Only domain knowledge can identify that subset."));
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+
+    MetricsPrinter.print(
+        new AnalysisResult(List.of(violation)),
+        projectDirectory,
+        new PrintStream(bytes, true, StandardCharsets.UTF_8));
+
+    assertThat(bytes.toString(StandardCharsets.UTF_8)).containsSubsequence(
+        "too-many-instance-fields | src/main/java/Order.java:4 | Order has 3 instance fields (limit 2)",
+        "CONTEXT field-list | The type declares 3 instance fields.",
+        "  Related: Customer customer",
+        "  Related: Money total",
+        "  Related: Clock clock",
+        "  Consider: Look for a cohesive subset of these values.",
+        "  Note: Only domain knowledge can identify that subset.",
+        "ADVICE too-many-instance-fields");
   }
 
   private Violation violation(String file, int line, String rule, String subject, String message) {

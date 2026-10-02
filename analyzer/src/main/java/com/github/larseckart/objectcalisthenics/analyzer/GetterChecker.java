@@ -15,6 +15,7 @@ import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.expr.ThisExpr;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -41,7 +42,34 @@ class GetterChecker {
             method.getBegin().map(position -> position.line).orElse(0),
             "getter",
             method.getNameAsString(),
-            "Method '%s' looks like a getter".formatted(method.getNameAsString())));
+            "Method '%s' looks like a getter".formatted(method.getNameAsString()))
+            .withContext(accessorContext(method)));
+  }
+
+  private ViolationContext accessorContext(MethodDeclaration method) {
+    String property = propertyName(method.getNameAsString());
+    Optional<Expression> returnedState = directlyReturnedState(method);
+    String summary = returnedState
+        .map(expression -> "The method directly returns field '%s'.".formatted(stateName(expression)))
+        .orElseGet(() -> declaresProperty(method, property)
+            ? "The method name maps to declared field or component '%s'.".formatted(property)
+            : "The method has a getter-shaped name and no parameters.");
+    List<String> relatedCode = returnedState
+        .map(expression -> List.of("return " + expression))
+        .orElseGet(() -> List.of(method.getDeclarationAsString(false, false, false)));
+    return new ViolationContext(
+        "accessor-pattern",
+        summary,
+        relatedCode,
+        "Consider reviewing callers to see whether an intent-revealing operation could replace this read.",
+        "Domain judgement is needed because read-only access can be appropriate at DTO and display boundaries.");
+  }
+
+  private static String stateName(Expression expression) {
+    if (expression instanceof NameExpr name) {
+      return name.getNameAsString();
+    }
+    return expression.asFieldAccessExpr().getNameAsString();
   }
 
   boolean looksLikeGetter(MethodDeclaration method) {
@@ -56,7 +84,7 @@ class GetterChecker {
     }
 
     String property = propertyName(method.getNameAsString());
-    return declaresProperty(method, property) || directlyReturnsState(method);
+    return declaresProperty(method, property) || directlyReturnedState(method).isPresent();
   }
 
   private boolean hasGetterPrefix(String name) {
@@ -122,18 +150,17 @@ class GetterChecker {
     return Optional.empty();
   }
 
-  private static boolean directlyReturnsState(MethodDeclaration method) {
+  private static Optional<Expression> directlyReturnedState(MethodDeclaration method) {
     if (method.getBody().isEmpty() || method.getBody().get().getStatements().size() != 1) {
-      return false;
+      return Optional.empty();
     }
     return method.getBody().get().getStatement(0)
         .toReturnStmt()
         .flatMap(ReturnStmt::getExpression)
         .map(GetterChecker::unwrap)
-        .map(expression -> expression instanceof NameExpr
+        .filter(expression -> expression instanceof NameExpr
             || expression instanceof FieldAccessExpr field
-            && field.getScope() instanceof ThisExpr)
-        .orElse(false);
+            && field.getScope() instanceof ThisExpr);
   }
 
   private static Expression unwrap(Expression expression) {

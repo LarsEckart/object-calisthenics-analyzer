@@ -4,8 +4,9 @@
 
 A Java [JavaParser](https://javaparser.org/)-based analyzer and Gradle plugin
 that checks Java source against Object Calisthenics rules. Each finding also
-gives the design principle, possible refactorings, and the human judgement that
-still belongs to you.
+gives the design principle and possible refactorings. Field, nesting, and
+accessor findings also point to the source shape that triggered them. The
+guidance stays non-prescriptive because the final design needs human judgement.
 
 Requires Java 17 or later. Parses Java source up to Java 26.
 
@@ -98,6 +99,12 @@ or `@SuppressWarnings("calisthenics:primitive-obsession")`.
 - `objectCalisthenicsBaseline` – write current violations to the baseline file.
 - `objectCalisthenicsReport` – write the JSON report without failing.
 - `check` depends on `objectCalisthenicsCheck`.
+
+The console prints source-aware context below a finding when the rule can
+extract useful evidence. The JSON detail then includes a `context` object with
+its `kind`, `summary`, `related_code`, `suggestion`, and `caution`. Findings
+without useful source context omit this object and keep the stable rule-level
+advice.
 
 To adopt the plugin on an existing codebase without fixing everything first:
 

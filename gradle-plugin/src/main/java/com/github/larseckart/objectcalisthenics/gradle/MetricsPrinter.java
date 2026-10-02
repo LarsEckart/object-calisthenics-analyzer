@@ -3,6 +3,7 @@ package com.github.larseckart.objectcalisthenics.gradle;
 import com.github.larseckart.objectcalisthenics.analyzer.Advice;
 import com.github.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.github.larseckart.objectcalisthenics.analyzer.Violation;
+import com.github.larseckart.objectcalisthenics.analyzer.ViolationContext;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -68,12 +69,22 @@ final class MetricsPrinter {
       out.println(violation.rule() + " | "
           + relativePath(violation.file(), projectDirectory) + ":" + violation.line() + " | "
           + violation.message());
+      violation.context().ifPresent(context -> printContext(context, out));
     }
 
     violations.stream()
         .map(Violation::rule)
         .distinct()
         .forEach(rule -> printAdvice(rule, Advice.forRule(rule), out));
+  }
+
+  private static void printContext(ViolationContext context, PrintStream out) {
+    out.println("CONTEXT " + context.kind() + " | " + context.summary());
+    for (String relatedCode : context.relatedCode()) {
+      out.println("  Related: " + relatedCode);
+    }
+    out.println("  Consider: " + context.suggestion());
+    out.println("  Note: " + context.caution());
   }
 
   private static void printAdvice(String rule, Advice advice, PrintStream out) {

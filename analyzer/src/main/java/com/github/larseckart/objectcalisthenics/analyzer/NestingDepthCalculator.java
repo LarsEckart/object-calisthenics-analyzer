@@ -1,5 +1,6 @@
 package com.github.larseckart.objectcalisthenics.analyzer;
 
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.RecordDeclaration;
@@ -15,18 +16,22 @@ import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
  */
 class NestingDepthCalculator {
 
-  int compute(MethodDeclaration method) {
+  Nesting measure(MethodDeclaration method) {
     return method.getBody()
         .map(body -> {
           NestingDepthVisitor visitor = new NestingDepthVisitor();
           visitor.visit(body, 0);
-          return visitor.maxDepth;
+          return new Nesting(visitor.maxDepth, visitor.deepestNode);
         })
-        .orElse(0);
+        .orElseGet(() -> new Nesting(0, method));
+  }
+
+  record Nesting(int depth, Node deepestNode) {
   }
 
   private static class NestingDepthVisitor extends GenericVisitorAdapter<Void, Integer> {
     private int maxDepth = 0;
+    private Node deepestNode;
 
     @Override
     public Void visit(BlockStmt node, Integer depth) {
@@ -36,7 +41,7 @@ class NestingDepthCalculator {
           .orElse(false);
       if (!isMethodBody) {
         childDepth = depth + 1;
-        maxDepth = Math.max(maxDepth, childDepth);
+        recordDepth(childDepth, node);
       }
       return super.visit(node, childDepth);
     }
@@ -44,22 +49,29 @@ class NestingDepthCalculator {
     @Override
     public Void visit(LambdaExpr node, Integer depth) {
       int childDepth = depth + 1;
-      maxDepth = Math.max(maxDepth, childDepth);
+      recordDepth(childDepth, node);
       return super.visit(node, childDepth);
     }
 
     @Override
     public Void visit(ClassOrInterfaceDeclaration node, Integer depth) {
       int childDepth = depth + 1;
-      maxDepth = Math.max(maxDepth, childDepth);
+      recordDepth(childDepth, node);
       return super.visit(node, childDepth);
     }
 
     @Override
     public Void visit(RecordDeclaration node, Integer depth) {
       int childDepth = depth + 1;
-      maxDepth = Math.max(maxDepth, childDepth);
+      recordDepth(childDepth, node);
       return super.visit(node, childDepth);
+    }
+
+    private void recordDepth(int depth, Node node) {
+      if (depth > maxDepth) {
+        maxDepth = depth;
+        deepestNode = node;
+      }
     }
   }
 }

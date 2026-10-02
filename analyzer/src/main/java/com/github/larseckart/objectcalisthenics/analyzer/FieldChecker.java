@@ -68,7 +68,8 @@ class FieldChecker {
 
   private void checkClassFields(
       ClassOrInterfaceDeclaration type, Path file, Consumer<Violation> violations) {
-    long instanceFields = instanceFieldCount(type);
+    List<FieldInfo> fields = fieldInfos(type);
+    long instanceFields = fields.size();
     if (instanceFields <= rules.maxFieldsPerClass()) {
       return;
     }
@@ -80,19 +81,14 @@ class FieldChecker {
             "too-many-instance-fields",
             type.getNameAsString(),
             "%s has %d instance fields (limit %d)"
-                .formatted(type.getNameAsString(), instanceFields, rules.maxFieldsPerClass())));
-  }
-
-  private static long instanceFieldCount(ClassOrInterfaceDeclaration type) {
-    return type.getFields().stream()
-        .filter(field -> !field.isStatic())
-        .mapToLong(field -> field.getVariables().size())
-        .sum();
+                .formatted(type.getNameAsString(), instanceFields, rules.maxFieldsPerClass()))
+            .withContext(fieldContext("instance fields", fields)));
   }
 
   private void checkRecordFields(
       RecordDeclaration record, Path file, Consumer<Violation> violations) {
-    int components = record.getParameters().size();
+    List<FieldInfo> fields = fieldInfos(record);
+    int components = fields.size();
     if (components <= rules.maxFieldsPerClass()) {
       return;
     }
@@ -104,7 +100,17 @@ class FieldChecker {
             "too-many-record-components",
             record.getNameAsString(),
             "%s has %d record components (limit %d)"
-                .formatted(record.getNameAsString(), components, rules.maxFieldsPerClass())));
+                .formatted(record.getNameAsString(), components, rules.maxFieldsPerClass()))
+            .withContext(fieldContext("record components", fields)));
+  }
+
+  private static ViolationContext fieldContext(String description, List<FieldInfo> fields) {
+    return new ViolationContext(
+        "field-list",
+        "The type declares %d %s.".formatted(fields.size(), description),
+        fields.stream().map(FieldInfo::display).toList(),
+        "Look for a cohesive subset of these values that changes together or supports the same behaviour.",
+        "Only domain knowledge can determine whether any of these fields belong in a separate type.");
   }
 
   private void checkFirstClassCollections(
@@ -172,5 +178,9 @@ class FieldChecker {
   }
 
   private record FieldInfo(String name, Type type) {
+
+    String display() {
+      return type.asString() + " " + name;
+    }
   }
 }
