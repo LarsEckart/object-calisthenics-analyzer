@@ -167,6 +167,8 @@ This checks whole changed files, not just changed lines or changes since a branc
 - No getters that expose declared state and no setters.
 - A class/record that owns a collection or array may not own any other instance
   field/component.
+- Wrap bare collections, maps, arrays, and varargs in method parameters and
+  return types, and in constructor parameters except when building a collection wrapper.
 - Do not traverse through collaborators in receiver chains.
 - Wrap repeated primitive and String concepts when validation, transformation,
   comparison, or arithmetic behaviour has accumulated around them.
