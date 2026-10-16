@@ -15,7 +15,7 @@ Requires Java 17 or later. Parses Java source up to Java 26.
 ```kotlin
 plugins {
     java
-    id("com.larseckart.object-calisthenics") version "0.4.0"
+    id("com.larseckart.object-calisthenics") version "0.5.0"
 }
 
 repositories {
@@ -24,7 +24,7 @@ repositories {
 ```
 
 The analyzer library is also on Maven Central as
-`com.larseckart:object-calisthenics-analyzer:0.4.0`.
+`com.larseckart:object-calisthenics-analyzer:0.5.0`.
 
 ## Configure
 
