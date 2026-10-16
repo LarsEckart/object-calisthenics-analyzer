@@ -1,4 +1,4 @@
-package com.larseckart.objectcalisthenics.gradle;
+package com.larseckart.objectcalisthenics.gradle.reporting;
 
 import com.larseckart.objectcalisthenics.analyzer.Advice;
 import com.larseckart.objectcalisthenics.analyzer.AnalysisResult;
@@ -15,13 +15,13 @@ import java.util.List;
 /**
  * Writes the analysis result as JSON for the report task.
  */
-final class JsonReportWriter {
+public final class JsonReportWriter {
 
   private JsonReportWriter() {
     // utility class
   }
 
-  static void write(AnalysisResult result, Path file) {
+  public static void write(AnalysisResult result, Path file) {
     try {
       Files.createDirectories(file.getParent());
       Files.writeString(file, toJson(result));

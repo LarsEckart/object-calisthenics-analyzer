@@ -1,5 +1,12 @@
 package com.larseckart.objectcalisthenics.gradle;
 
+import com.larseckart.objectcalisthenics.gradle.configuration.ObjectCalisthenicsExtension;
+import com.larseckart.objectcalisthenics.gradle.configuration.ObjectCalisthenicsRules;
+import com.larseckart.objectcalisthenics.gradle.git.GitChangedJavaFiles;
+import com.larseckart.objectcalisthenics.gradle.tasks.ObjectCalisthenicsBaselineTask;
+import com.larseckart.objectcalisthenics.gradle.tasks.ObjectCalisthenicsCheckTask;
+import com.larseckart.objectcalisthenics.gradle.tasks.ObjectCalisthenicsReportTask;
+
 import org.gradle.api.Plugin;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.Project;

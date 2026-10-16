@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class RuleSetTest {
 
   @Test
-  void preservesDefaultLimits() {
+  public void preservesDefaultLimits() {
     RuleSet rules = RuleSet.defaults();
     assertThat(rules).extracting(RuleSet::maxClassLines, RuleSet::maxFieldsPerClass,
         RuleSet::maxMethodNesting).containsExactly(50, 2, 1);
@@ -24,7 +24,7 @@ class RuleSetTest {
   }
 
   @Test
-  void preservesDefaultPolicies() {
+  public void preservesDefaultPolicies() {
     RuleSet rules = RuleSet.defaults();
     assertThat(rules).extracting(RuleSet::includeRecordComponentsInFieldRule, RuleSet::forbidElse,
         RuleSet::forbidGetters, RuleSet::forbidSetters, RuleSet::forbidNonFirstClassCollections,
@@ -33,7 +33,7 @@ class RuleSetTest {
   }
 
   @Test
-  void preservesDefaultChainExceptions() {
+  public void preservesDefaultChainExceptions() {
     RuleSet rules = RuleSet.defaults();
     assertThat(rules.fluentChainMethods()).isEmpty();
     assertThat(rules.safeChainRoots()).containsExactlyInAnyOrder(
@@ -41,7 +41,7 @@ class RuleSetTest {
   }
 
   @Test
-  void overridesNamedLimitsWithoutChangingDefaults() {
+  public void overridesNamedLimitsWithoutChangingDefaults() {
     RuleSet rules = RuleSet.builder().maxClassLines(80).maxFieldsPerClass(4).maxMethodNesting(3).build();
     assertThat(rules).extracting(RuleSet::maxClassLines, RuleSet::maxFieldsPerClass,
         RuleSet::maxMethodNesting).containsExactly(80, 4, 3);
@@ -49,7 +49,7 @@ class RuleSetTest {
   }
 
   @Test
-  void overridesEveryPolicyByName() {
+  public void overridesEveryPolicyByName() {
     RuleSet rules = RuleSet.builder()
         .disable(Rule.INCLUDE_RECORD_COMPONENTS_IN_FIELD_RULE)
         .disable(Rule.FORBID_ELSE)
@@ -67,7 +67,7 @@ class RuleSetTest {
   }
 
   @Test
-  void snapshotsTheBuilderAtEachBuild() {
+  public void snapshotsTheBuilderAtEachBuild() {
     RuleSet.Builder builder = RuleSet.builder();
     RuleSet first = builder.build();
     RuleSet second = builder.maxClassLines(80).enable(Rule.ONE_TOP_LEVEL_TYPE_PER_FILE).build();
@@ -78,7 +78,7 @@ class RuleSetTest {
 
   @ParameterizedTest
   @EnumSource(Rule.class)
-  void canEnableAndDisableEveryRuleWithoutChangingExistingSnapshots(Rule rule) {
+  public void canEnableAndDisableEveryRuleWithoutChangingExistingSnapshots(Rule rule) {
     RuleSet.Builder builder = RuleSet.builder();
     RuleSet enabled = builder.enable(rule).enable(rule).build();
     RuleSet disabled = builder.disable(rule).disable(rule).build();
@@ -88,7 +88,7 @@ class RuleSetTest {
 
   @ParameterizedTest
   @EnumSource(Rule.class)
-  void switchingOneRuleLeavesOtherDefaultsAlone(Rule rule) {
+  public void switchingOneRuleLeavesOtherDefaultsAlone(Rule rule) {
     RuleSet defaults = RuleSet.defaults();
     RuleSet changed = RuleSet.builder().disable(rule).build();
     for (Rule other : Rule.values()) {
@@ -99,20 +99,20 @@ class RuleSetTest {
   }
 
   @Test
-  void rejectsNullRules() {
+  public void rejectsNullRules() {
     assertThatNullPointerException().isThrownBy(() -> RuleSet.builder().enable(null));
     assertThatNullPointerException().isThrownBy(() -> RuleSet.builder().disable(null));
     assertThatNullPointerException().isThrownBy(() -> RuleSet.defaults().enabled(null));
   }
 
   @Test
-  void buildersDoNotShareChanges() {
+  public void buildersDoNotShareChanges() {
     RuleSet.builder().maxClassLines(80).build();
     assertThat(RuleSet.builder().build().maxClassLines()).isEqualTo(50);
   }
 
   @Test
-  void copiesCallerOwnedSetsWhenConfigured() {
+  public void copiesCallerOwnedSetsWhenConfigured() {
     Set<String> methods = new HashSet<>(Set.of("map"));
     Set<String> roots = new HashSet<>(Set.of("Output"));
     RuleSet.Builder builder = RuleSet.builder().fluentChainMethods(methods).safeChainRoots(roots);
@@ -124,7 +124,7 @@ class RuleSetTest {
   }
 
   @Test
-  void builderSetChangesDoNotReachExistingSnapshots() {
+  public void builderSetChangesDoNotReachExistingSnapshots() {
     RuleSet.Builder builder = RuleSet.builder().fluentChainMethods(Set.of("map")).safeChainRoots(Set.of("Output"));
     RuleSet rules = builder.build();
     builder.fluentChainMethods(Set.of("flatMap")).safeChainRoots(Set.of("Logger"));
@@ -133,7 +133,7 @@ class RuleSetTest {
   }
 
   @Test
-  void exposesReadOnlySets() {
+  public void exposesReadOnlySets() {
     RuleSet rules = RuleSet.defaults();
     assertThatThrownBy(() -> rules.fluentChainMethods().add("map"))
         .isInstanceOf(UnsupportedOperationException.class);
@@ -142,7 +142,7 @@ class RuleSetTest {
   }
 
   @Test
-  void rejectsNullSetsAndElements() {
+  public void rejectsNullSetsAndElements() {
     assertThatNullPointerException().isThrownBy(() -> RuleSet.builder().fluentChainMethods(null));
     assertThatNullPointerException().isThrownBy(() -> RuleSet.builder().safeChainRoots(null));
     Set<String> invalid = new HashSet<>();
@@ -153,7 +153,7 @@ class RuleSetTest {
 
   @ParameterizedTest
   @MethodSource("singleOverrides")
-  void everySettingTakesPartInValueEquality(RuleSet rules) {
+  public void everySettingTakesPartInValueEquality(RuleSet rules) {
     assertThat(rules).isNotEqualTo(RuleSet.defaults());
     assertThat(RuleSet.defaults()).isNotEqualTo(rules);
   }
@@ -176,7 +176,7 @@ class RuleSetTest {
   }
 
   @Test
-  void comparesValuesRatherThanBuilderIdentity() {
+  public void comparesValuesRatherThanBuilderIdentity() {
     RuleSet first = RuleSet.builder().maxClassLines(80).fluentChainMethods(Set.of("map")).build();
     RuleSet equal = RuleSet.builder().maxClassLines(80).fluentChainMethods(Set.of("map")).build();
     assertThat(first).isEqualTo(equal).hasSameHashCodeAs(equal);

@@ -1,4 +1,6 @@
-package com.larseckart.objectcalisthenics.analyzer;
+package com.larseckart.objectcalisthenics.analyzer.checks;
+
+import com.larseckart.objectcalisthenics.analyzer.Violation;
 
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.CallableDeclaration;
@@ -17,7 +19,7 @@ import java.util.function.Consumer;
 /** Finds bare collections crossing method boundaries instead of owning their behaviour. */
 class CollectionSignatureChecker {
 
-  void check(TypeDeclaration<?> owner, Path file, Consumer<Violation> violations) {
+  public void check(TypeDeclaration<?> owner, Path file, Consumer<Violation> violations) {
     if (suppressed(owner)) {
       return;
     }

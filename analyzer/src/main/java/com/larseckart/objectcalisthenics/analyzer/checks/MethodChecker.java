@@ -1,4 +1,8 @@
-package com.larseckart.objectcalisthenics.analyzer;
+package com.larseckart.objectcalisthenics.analyzer.checks;
+
+import com.larseckart.objectcalisthenics.analyzer.RuleSet;
+import com.larseckart.objectcalisthenics.analyzer.Violation;
+import com.larseckart.objectcalisthenics.analyzer.ViolationContext;
 
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -26,13 +30,13 @@ class MethodChecker {
   private final GetterChecker getterChecker;
   private final NestingDepthCalculator nestingDepthCalculator;
 
-  MethodChecker(RuleSet rules) {
+  public MethodChecker(RuleSet rules) {
     this.rules = rules;
     this.getterChecker = new GetterChecker(rules.strictGetterNames());
     this.nestingDepthCalculator = new NestingDepthCalculator();
   }
 
-  void check(MethodDeclaration method, Path file, Consumer<Violation> violations) {
+  public void check(MethodDeclaration method, Path file, Consumer<Violation> violations) {
     if (!method.getBody().isPresent() || !isPublic(method)) {
       return;
     }

@@ -1,4 +1,7 @@
-package com.larseckart.objectcalisthenics.analyzer;
+package com.larseckart.objectcalisthenics.analyzer.checks;
+
+import com.larseckart.objectcalisthenics.analyzer.PrimitiveObsessionConfig;
+import com.larseckart.objectcalisthenics.analyzer.Violation;
 
 import com.github.javaparser.ast.body.CallableDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
@@ -30,14 +33,14 @@ class RawTypePolicyChecker {
   ) {
   }
 
-  RawTypePolicyChecker(PrimitiveObsessionConfig config) {
+  public RawTypePolicyChecker(PrimitiveObsessionConfig config) {
     allowedRawTypes = config.allowedRawTypes();
     boundaryClassNamePatterns = config.boundaryClassNamePatterns().stream()
         .map(Pattern::compile)
         .toList();
   }
 
-  void check(TypeDeclaration<?> type, Path file, Consumer<Violation> violations) {
+  public void check(TypeDeclaration<?> type, Path file, Consumer<Violation> violations) {
     if (isBoundary(type)) {
       return;
     }

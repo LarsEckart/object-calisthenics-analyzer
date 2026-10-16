@@ -1,4 +1,8 @@
-package com.larseckart.objectcalisthenics.analyzer;
+package com.larseckart.objectcalisthenics.analyzer.checks;
+
+import com.larseckart.objectcalisthenics.analyzer.RuleSet;
+import com.larseckart.objectcalisthenics.analyzer.Violation;
+import com.larseckart.objectcalisthenics.analyzer.ViolationContext;
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.RecordDeclaration;
@@ -20,11 +24,11 @@ class FieldChecker {
 
   private final RuleSet rules;
 
-  FieldChecker(RuleSet rules) {
+  public FieldChecker(RuleSet rules) {
     this.rules = rules;
   }
 
-  void check(TypeDeclaration<?> type, Path file, Consumer<Violation> violations) {
+  public void check(TypeDeclaration<?> type, Path file, Consumer<Violation> violations) {
     if (suppressesFieldRule(type)) {
       return;
     }
@@ -137,7 +141,7 @@ class FieldChecker {
 
   private record FieldInfo(String name, Type type) {
 
-    String display() {
+    private String display() {
       return type.asString() + " " + name;
     }
   }

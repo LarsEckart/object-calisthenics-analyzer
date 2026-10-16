@@ -1,4 +1,4 @@
-package com.larseckart.objectcalisthenics.gradle;
+package com.larseckart.objectcalisthenics.gradle.reporting;
 
 import com.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.larseckart.objectcalisthenics.analyzer.Violation;
@@ -19,7 +19,7 @@ class JsonReportWriterTest {
   Path tempDirectory;
 
   @Test
-  void writesStructuredContextOnlyWhenPresent() throws IOException {
+  public void writesStructuredContextOnlyWhenPresent() throws IOException {
     Violation contextual = new Violation(
         Path.of("Order.java"),
         4,

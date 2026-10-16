@@ -21,7 +21,7 @@ class PrimitiveObsessionCheckerTest {
   Path tempDir;
 
   @Test
-  void reportsRepeatedStringConceptWithPrivateBehaviour() throws IOException {
+  public void reportsRepeatedStringConceptWithPrivateBehaviour() throws IOException {
     Path source = writeSource("Accounts.java", """
         class Accounts {
           void register(String email) {
@@ -58,7 +58,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void fieldsConnectSameNamedParametersWithoutArgumentFlow() throws IOException {
+  public void fieldsConnectSameNamedParametersWithoutArgumentFlow() throws IOException {
     Violation finding = singleFinding("Attempts.java", """
         class Attempts {
           private int maximum;
@@ -76,7 +76,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void declarationIdentityDoesNotDependOnSourceLines() throws IOException {
+  public void declarationIdentityDoesNotDependOnSourceLines() throws IOException {
     Violation finding = singleFinding("Limits.java", """
         class Limits { int maximum; void configure(int maximum) {
           if (maximum < 1) throw new IllegalArgumentException();
@@ -88,7 +88,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void flowingParameterIdentityDoesNotDependOnSourceLines() throws IOException {
+  public void flowingParameterIdentityDoesNotDependOnSourceLines() throws IOException {
     Path source = writeSource("Accounts.java", """
         class Accounts { void register(String email) { validate(email); } private void validate(String email) {
           if (email.isBlank()) throw new IllegalArgumentException();
@@ -101,7 +101,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void recordComponentsParticipateUnlessTheRecordIsAPrimitiveWrapper() throws IOException {
+  public void recordComponentsParticipateUnlessTheRecordIsAPrimitiveWrapper() throws IOException {
     Path source = writeSource("Money.java", """
         record Money(int amount, String currency) {
           Money withAmount(int amount) {
@@ -119,7 +119,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void staticFieldsDoNotTurnParametersIntoARepeatedConcept() throws IOException {
+  public void staticFieldsDoNotTurnParametersIntoARepeatedConcept() throws IOException {
     Path source = writeSource("Limits.java", """
         class Limits {
           private static int maximum;
@@ -137,7 +137,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void boxedPrimitivesAreConceptCandidates() throws IOException {
+  public void boxedPrimitivesAreConceptCandidates() throws IOException {
     Violation finding = singleFinding("Retries.java", """
         class Retries {
           void configure(Integer retries) {
@@ -156,7 +156,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void doesNotReportRepeatedTechnicalPrimitiveWithoutBehaviour() throws IOException {
+  public void doesNotReportRepeatedTechnicalPrimitiveWithoutBehaviour() throws IOException {
     Path source = writeSource("Pager.java", """
         class Pager {
           void move(int offset) {
@@ -174,7 +174,7 @@ class PrimitiveObsessionCheckerTest {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("unrelatedBehaviourCases")
-  void doesNotBorrowUnrelatedBehaviour(String description, String source) throws IOException {
+  public void doesNotBorrowUnrelatedBehaviour(String description, String source) throws IOException {
     assertThat(findings("UnrelatedBehaviour.java", source)).isEmpty();
   }
 
@@ -249,7 +249,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void ambiguousOverloadsDoNotCreateSpeculativeParameterFlow() throws IOException {
+  public void ambiguousOverloadsDoNotCreateSpeculativeParameterFlow() throws IOException {
     Path source = writeSource("Accounts.java", """
         class Accounts {
           void register(String email) {
@@ -272,7 +272,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void doesNotMergeSameNamedParametersWithoutDataFlow() throws IOException {
+  public void doesNotMergeSameNamedParametersWithoutDataFlow() throws IOException {
     Path source = writeSource("Payments.java", """
         class Payments {
           void charge(int amount, String currency) {
@@ -293,7 +293,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void travellingEvidenceRequiresThreeRelevantCallables() throws IOException {
+  public void travellingEvidenceRequiresThreeRelevantCallables() throws IOException {
     Path source = writeSource("Payments.java", """
         class Payments {
           int amount;
@@ -319,7 +319,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void travellingEvidenceIsAddedAtThreeRelevantCallables() throws IOException {
+  public void travellingEvidenceIsAddedAtThreeRelevantCallables() throws IOException {
     Path source = writeSource("Payments.java", """
         class Payments {
           int amount;
@@ -344,7 +344,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void doesNotCombineUnrelatedGenericParameters() throws IOException {
+  public void doesNotCombineUnrelatedGenericParameters() throws IOException {
     Path source = writeSource("Parameters.java", """
         class Parameters {
           private int integer(String value) {
@@ -367,7 +367,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void genericValueDoesNotBecomeAConceptWhenHelpersForwardIt() throws IOException {
+  public void genericValueDoesNotBecomeAConceptWhenHelpersForwardIt() throws IOException {
     Path source = writeSource("Parameters.java", """
         class Parameters {
           private String required(String value) {
@@ -387,7 +387,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void primitiveArraysAreLeftToCollectionAndParsingRules() throws IOException {
+  public void primitiveArraysAreLeftToCollectionAndParsingRules() throws IOException {
     Path source = writeSource("Images.java", """
         class Images {
           void validate(byte[] image) {
@@ -409,7 +409,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void enumStorageValuesAreAlreadyEncapsulatedByTheEnum() throws IOException {
+  public void enumStorageValuesAreAlreadyEncapsulatedByTheEnum() throws IOException {
     Path source = writeSource("DeliveryMethod.java", """
         enum DeliveryMethod {
           EMAIL("email"), SMS("sms");
@@ -435,7 +435,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void offsetsAndLengthsTravellingWithArraysAreParsingCoordinates() throws IOException {
+  public void offsetsAndLengthsTravellingWithArraysAreParsingCoordinates() throws IOException {
     Path source = writeSource("PacketReader.java", """
         class PacketReader {
           void read(byte[] bytes, int offset, int length) {
@@ -454,7 +454,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void domainOffsetIsNotIgnoredWithoutAnArrayOrBuffer() throws IOException {
+  public void domainOffsetIsNotIgnoredWithoutAnArrayOrBuffer() throws IOException {
     Violation finding = singleFinding("BillingSchedule.java", """
         class BillingSchedule {
           void schedule(int offset) {
@@ -473,7 +473,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void doesNotTreatStringConcatenationAsArithmetic() throws IOException {
+  public void doesNotTreatStringConcatenationAsArithmetic() throws IOException {
     Path source = writeSource("Errors.java", """
         class Errors {
           void missing(String name) {
@@ -491,7 +491,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void doesNotTreatFormattingANumericPrimitiveAsArithmetic() throws IOException {
+  public void doesNotTreatFormattingANumericPrimitiveAsArithmetic() throws IOException {
     Path source = writeSource("Messages.java", """
         class Messages {
           String show(int amount) {
@@ -508,7 +508,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void doesNotTreatOrdinaryBooleanBranchesAsMissingBehaviour() throws IOException {
+  public void doesNotTreatOrdinaryBooleanBranchesAsMissingBehaviour() throws IOException {
     Path source = writeSource("Cookies.java", """
         class Cookies {
           void set(boolean secure) {
@@ -530,7 +530,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void doesNotTreatResultSelectionAsARejectingGuard() throws IOException {
+  public void doesNotTreatResultSelectionAsARejectingGuard() throws IOException {
     Path source = writeSource("Protocols.java", """
         class Protocols {
           String select(boolean secure) {
@@ -550,7 +550,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void assertionsAndRejectingGuardsCountAsConditionalBehaviour() throws IOException {
+  public void assertionsAndRejectingGuardsCountAsConditionalBehaviour() throws IOException {
     Path source = writeSource("Page.java", """
         class Page {
           void show(int number) {
@@ -575,7 +575,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void numericArithmeticCountsAsBehaviour() throws IOException {
+  public void numericArithmeticCountsAsBehaviour() throws IOException {
     Path source = writeSource("Pricing.java", """
         class Pricing {
           int total(int amount) {
@@ -594,7 +594,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void doesNotReportPrimitiveInputBehaviourInsideItsWrapper() throws IOException {
+  public void doesNotReportPrimitiveInputBehaviourInsideItsWrapper() throws IOException {
     Path source = writeSource("EmailAddress.java", """
         record EmailAddress(String value) {
           static EmailAddress parse(String text) {
@@ -614,7 +614,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void thresholdCanDisableOrRequireStrongerEvidence() throws IOException {
+  public void thresholdCanDisableOrRequireStrongerEvidence() throws IOException {
     Path source = writeSource("Accounts.java", """
         class Accounts {
           void register(String email) {
@@ -634,7 +634,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   @Test
-  void canSuppressTheHeuristicPerType() throws IOException {
+  public void canSuppressTheHeuristicPerType() throws IOException {
     Path source = writeSource("Accounts.java", """
         @SuppressWarnings("calisthenics:primitive-obsession")
         class Accounts {

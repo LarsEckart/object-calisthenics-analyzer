@@ -1,4 +1,4 @@
-package com.larseckart.objectcalisthenics.gradle;
+package com.larseckart.objectcalisthenics.gradle.reporting;
 
 import com.larseckart.objectcalisthenics.analyzer.Advice;
 import com.larseckart.objectcalisthenics.analyzer.AnalysisResult;
@@ -15,13 +15,13 @@ import java.util.Objects;
  * Prints concise findings and the backwards-compatible {@code METRIC} lines
  * used by the original Python measurement script.
  */
-final class MetricsPrinter {
+public final class MetricsPrinter {
 
   private MetricsPrinter() {
     // utility class
   }
 
-  static void print(AnalysisResult result, Path projectDirectory, PrintStream out) {
+  public static void print(AnalysisResult result, Path projectDirectory, PrintStream out) {
     long classesOver50 = result.violations().stream()
         .filter(v -> v.rule().equals("class-too-long"))
         .count();

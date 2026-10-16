@@ -1,4 +1,4 @@
-package com.larseckart.objectcalisthenics.gradle;
+package com.larseckart.objectcalisthenics.gradle.configuration;
 
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;

@@ -57,5 +57,5 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.larseckart.objectcalisthenics.analyzer.ObjectCalisthenicsAnalyzerCli")
+    mainClass.set("com.larseckart.objectcalisthenics.cli.ObjectCalisthenicsAnalyzerCli")
 }

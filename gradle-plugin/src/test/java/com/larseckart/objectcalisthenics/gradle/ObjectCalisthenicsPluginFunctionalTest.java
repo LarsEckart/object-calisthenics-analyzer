@@ -20,7 +20,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   Path projectDir;
 
   @Test
-  void companionFileRuleIsOptInAndWorksWithReportsAndBaseline() throws IOException {
+  public void companionFileRuleIsOptInAndWorksWithReportsAndBaseline() throws IOException {
     writeSettings();
     writeJavaSource("Main.java", "class Main {}\nclass Helper {}\n");
     writeBuildScript();
@@ -45,7 +45,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void checkTaskFailsWhenViolationsAreFound() throws IOException {
+  public void checkTaskFailsWhenViolationsAreFound() throws IOException {
     writeSettings();
     writeBadJavaSource();
     writeBuildScript();
@@ -58,7 +58,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void ignoreFailuresReportsViolationsWithoutFailing() throws IOException {
+  public void ignoreFailuresReportsViolationsWithoutFailing() throws IOException {
     writeSettings();
     writeBadJavaSource();
     writeBuildScript("""
@@ -74,7 +74,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void changedCheckOnlyAnalyzesUntrackedJavaInTheSourceSet() throws IOException, InterruptedException {
+  public void changedCheckOnlyAnalyzesUntrackedJavaInTheSourceSet() throws IOException, InterruptedException {
     writeSettings();
     writeBadJavaSource();
     writeBuildScript();
@@ -100,7 +100,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void changedCheckIncludesStagedAndUnstagedChanges() throws IOException, InterruptedException {
+  public void changedCheckIncludesStagedAndUnstagedChanges() throws IOException, InterruptedException {
     writeSettings();
     writeBadJavaSource();
     writeJavaSource("Unstaged.java", "class Unstaged {}\n");
@@ -119,7 +119,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void changedCheckSkipsWhenNoJavaFilesChanged() throws IOException, InterruptedException {
+  public void changedCheckSkipsWhenNoJavaFilesChanged() throws IOException, InterruptedException {
     writeSettings();
     writeBadJavaSource();
     writeBuildScript();
@@ -131,7 +131,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void changedCheckDoesNotReportStaleEntriesFromUntouchedFiles() throws IOException, InterruptedException {
+  public void changedCheckDoesNotReportStaleEntriesFromUntouchedFiles() throws IOException, InterruptedException {
     writeSettings();
     writeBadJavaSource();
     writeJavaSource("Clean.java", "class Clean {}\n");
@@ -148,7 +148,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void changedCheckFailsClearlyOutsideGit() throws IOException {
+  public void changedCheckFailsClearlyOutsideGit() throws IOException {
     writeSettings();
     writeBadJavaSource();
     writeBuildScript();
@@ -159,7 +159,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void baselineIgnoresExistingViolationsAndLineChangesButRejectsNewOnes() throws IOException {
+  public void baselineIgnoresExistingViolationsAndLineChangesButRejectsNewOnes() throws IOException {
     writeSettings();
     writeBadJavaSource();
     writeBuildScript();
@@ -199,7 +199,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void checkReportsStaleBaselineEntries() throws IOException {
+  public void checkReportsStaleBaselineEntries() throws IOException {
     writeSettings();
     writeBadJavaSource();
     writeBuildScript();
@@ -216,7 +216,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void baselineRespectsClassNameExclusions() throws IOException {
+  public void baselineRespectsClassNameExclusions() throws IOException {
     writeSettings();
     writeBadJavaSource();
     writeBuildScript("""
@@ -237,7 +237,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void excludedResponseDoesNotCreateStaleBaselineEntry() throws IOException {
+  public void excludedResponseDoesNotCreateStaleBaselineEntry() throws IOException {
     writeSettings();
     writeJavaSource("ExcludedResponse.java", """
         class ExcludedResponse {
@@ -270,7 +270,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void reportTaskWritesJsonWithoutFailing() throws IOException {
+  public void reportTaskWritesJsonWithoutFailing() throws IOException {
     writeSettings();
     writeBadJavaSource();
     writeBuildScript();
@@ -281,7 +281,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void independentlyRegisteredReportTaskUsesProjectDirectoryByDefault() throws IOException {
+  public void independentlyRegisteredReportTaskUsesProjectDirectoryByDefault() throws IOException {
     writeSettings();
     writeBadJavaSource();
     Files.writeString(projectDir.resolve("build.gradle.kts"), """
@@ -290,7 +290,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
             id("com.larseckart.object-calisthenics")
         }
 
-        tasks.register<com.larseckart.objectcalisthenics.gradle.ObjectCalisthenicsReportTask>("customReport") {
+        tasks.register<com.larseckart.objectcalisthenics.gradle.tasks.ObjectCalisthenicsReportTask>("customReport") {
             sourceFiles.from(sourceSets.main.get().allJava)
             classNamePatterns.set(emptyList())
             json.set(layout.buildDirectory.file("reports/calisthenics/custom.json"))
@@ -305,7 +305,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void reportTaskAppliesConfiguredFirstClassCollectionRule() throws IOException {
+  public void reportTaskAppliesConfiguredFirstClassCollectionRule() throws IOException {
     String json = runReportTaskWithSourceAndConfig(
         "CollectionOwner.java",
         """
@@ -327,7 +327,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void signatureFindingsUseTheExistingCollectionSwitch() throws IOException {
+  public void signatureFindingsUseTheExistingCollectionSwitch() throws IOException {
     String source = """
         class Search {
           java.util.List<String> events(java.util.Map<String, String> env) { return null; }
@@ -348,7 +348,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void reportTaskCanExcludeRecordComponentsFromFieldRule() throws IOException {
+  public void reportTaskCanExcludeRecordComponentsFromFieldRule() throws IOException {
     String json = runReportTaskWithSourceAndConfig(
         "Configuration.java",
         """
@@ -366,7 +366,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void reportTaskAppliesGetterAndTraversalConfiguration() throws IOException {
+  public void reportTaskAppliesGetterAndTraversalConfiguration() throws IOException {
     writeSettings();
     Path sourceDir = projectDir.resolve("src/main/java/");
     Files.createDirectories(sourceDir);
@@ -394,7 +394,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void reportTaskIncludesPrimitiveObsessionFindings() throws IOException {
+  public void reportTaskIncludesPrimitiveObsessionFindings() throws IOException {
     String json = runReportTaskWithSourceAndConfig(
         "Accounts.java",
         """
@@ -422,7 +422,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void reportTaskAppliesPrimitiveObsessionThreshold() throws IOException {
+  public void reportTaskAppliesPrimitiveObsessionThreshold() throws IOException {
     String json = runReportTaskWithSourceAndConfig(
         "Accounts.java",
         """
@@ -449,7 +449,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void reportTaskAppliesRawTypePolicyAndBoundaryExceptions() throws IOException {
+  public void reportTaskAppliesRawTypePolicyAndBoundaryExceptions() throws IOException {
     String json = runReportTaskWithSourceAndConfig(
         "Customers.java",
         """
@@ -475,7 +475,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void exclusionsIgnoreMatchingClassesAndKeepNonMatchingFailures() throws IOException {
+  public void exclusionsIgnoreMatchingClassesAndKeepNonMatchingFailures() throws IOException {
     writeSettings();
     writeJavaSource("ApiTypes.java", """
         class JoinMatchResponse {
@@ -511,7 +511,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void canCombineSeveralClassNamePatterns() throws IOException {
+  public void canCombineSeveralClassNamePatterns() throws IOException {
     writeSettings();
     writeJavaSource("Types.java", """
         class ApiResponse {
@@ -548,7 +548,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  void exclusionsMatchNestedClassesAndRecordsBySimpleName() throws IOException {
+  public void exclusionsMatchNestedClassesAndRecordsBySimpleName() throws IOException {
     writeSettings();
     writeJavaSource("NestedTypes.java", """
         class Container {

@@ -23,13 +23,13 @@ class ObjectCalisthenicsAnalyzerTest {
   Path tempDir;
 
   @BeforeEach
-  void setUp() throws URISyntaxException {
+  public void setUp() throws URISyntaxException {
     analyzer = new ObjectCalisthenicsAnalyzer();
     samplesDir = Paths.get(getClass().getResource("/samples").toURI());
   }
 
   @Test
-  void detectsClassThatIsTooLong() {
+  public void detectsClassThatIsTooLong() {
     AnalysisResult result = analyzer.analyze(samplesDir.resolve("TooLongClass.java").getParent());
     List<Violation> classTooLong = result.violations().stream()
         .filter(v -> v.rule().equals("class-too-long"))
@@ -41,7 +41,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void givesRuleSpecificAdvice() {
+  public void givesRuleSpecificAdvice() {
     AnalysisResult result = analyzer.analyze(List.of(samplesDir.resolve("ElseMethod.java")));
 
     Violation violation = result.violations().stream()
@@ -55,7 +55,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void detectsTooManyInstanceFields() {
+  public void detectsTooManyInstanceFields() {
     AnalysisResult result = analyzer.analyze(samplesDir.resolve("TooManyFieldsClass.java").getParent());
     List<Violation> fieldViolations = result.violations().stream()
         .filter(v -> v.rule().equals("too-many-instance-fields"))
@@ -73,7 +73,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void detectsTooManyRecordComponentsByDefault() {
+  public void detectsTooManyRecordComponentsByDefault() {
     AnalysisResult result = analyzer.analyze(List.of(
         samplesDir.resolve("../field-rule/TooManyComponentsRecord.java").normalize()));
 
@@ -83,7 +83,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void canExcludeRecordComponentsFromFieldRule() {
+  public void canExcludeRecordComponentsFromFieldRule() {
     ObjectCalisthenicsAnalyzer analyzerWithoutRecordComponents = new ObjectCalisthenicsAnalyzer(
         RuleSet.builder().disable(Rule.INCLUDE_RECORD_COMPONENTS_IN_FIELD_RULE)
             .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS).build());
@@ -98,7 +98,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void suppressesFieldRulePerType() {
+  public void suppressesFieldRulePerType() {
     AnalysisResult result = analyzer.analyze(List.of(
         samplesDir.resolve("../field-rule/SuppressedFieldsClass.java").normalize(),
         samplesDir.resolve("../field-rule/SuppressedComponentsRecord.java").normalize()));
@@ -107,7 +107,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void detectsElseKeyword() {
+  public void detectsElseKeyword() {
     AnalysisResult result = analyzer.analyze(samplesDir.resolve("ElseMethod.java").getParent());
 
     assertThat(result.violations())
@@ -115,7 +115,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void detectsDeeplyNestedMethod() {
+  public void detectsDeeplyNestedMethod() {
     AnalysisResult result = analyzer.analyze(samplesDir.resolve("DeepNestingMethod.java").getParent());
 
     Violation violation = result.violations().stream()
@@ -134,7 +134,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void detectsGettersAndSetters() {
+  public void detectsGettersAndSetters() {
     AnalysisResult result = analyzer.analyze(samplesDir.resolve("GetterSetterClass.java").getParent());
     List<Violation> getterSetter = result.violations().stream()
         .filter(v -> v.rule().equals("getter") || v.rule().equals("setter"))
@@ -166,7 +166,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void getterRuleAllowsComputedQueriesWithoutBackingState() throws IOException {
+  public void getterRuleAllowsComputedQueriesWithoutBackingState() throws IOException {
     Path source = writeSource("Queries.java", """
         class Queries {
           private String name;
@@ -199,7 +199,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void strictGetterNamesRestoresNameOnlyMatching() throws IOException {
+  public void strictGetterNamesRestoresNameOnlyMatching() throws IOException {
     Path source = writeSource("ComputedQuery.java", """
         class ComputedQuery {
           public boolean isIdle() { return velocity().isZero(); }
@@ -213,7 +213,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void detectsReceiverTraversalButAllowsIndependentAndConfiguredFluentCalls() throws IOException {
+  public void detectsReceiverTraversalButAllowsIndependentAndConfiguredFluentCalls() throws IOException {
     Path source = writeSource("Chains.java", """
         class Chains {
           private Service service;
@@ -248,7 +248,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void detectsNonFirstClassCollectionClass() {
+  public void detectsNonFirstClassCollectionClass() {
     ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer(
         RuleSet.defaults());
 
@@ -261,7 +261,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void detectsNonFirstClassArrayClass() {
+  public void detectsNonFirstClassArrayClass() {
     ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer(
         RuleSet.defaults());
 
@@ -274,7 +274,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void cleanFirstClassCollectionAndArrayClassesHaveNoCollectionViolation() {
+  public void cleanFirstClassCollectionAndArrayClassesHaveNoCollectionViolation() {
     ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer(
         RuleSet.defaults());
 
@@ -286,7 +286,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void cleanClassHasNoViolations() {
+  public void cleanClassHasNoViolations() {
     Path cleanDir = samplesDir.resolve("../clean").normalize();
     AnalysisResult result = analyzer.analyze(cleanDir);
 
@@ -294,7 +294,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void excludedClassesDoNotReceiveTraversalFindings() throws IOException {
+  public void excludedClassesDoNotReceiveTraversalFindings() throws IOException {
     Path source = writeSource("ExcludedTraversal.java", """
         class ExcludedResponse {
           public void handle() {
@@ -316,7 +316,7 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
-  void traversalFindingsUseEnclosingMethodAsSubject() throws IOException {
+  public void traversalFindingsUseEnclosingMethodAsSubject() throws IOException {
     Path source = writeSource("TwoChains.java", """
         class TwoChains {
           public void first() {

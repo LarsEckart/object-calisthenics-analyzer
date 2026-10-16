@@ -16,14 +16,14 @@ class TopLevelTypesTest {
   Path sourceRoot;
 
   @Test
-  void staysOffByDefaultAndForAnUntouchedBuilder() throws IOException {
+  public void staysOffByDefaultAndForAnUntouchedBuilder() throws IOException {
     Path file = source("Main.java", "class Main {} class Helper {}");
     assertThat(new ObjectCalisthenicsAnalyzer().analyze(List.of(file)).violations()).isEmpty();
     assertThat(RuleSet.builder().build().oneTopLevelTypePerFile()).isFalse();
   }
 
   @Test
-  void reportsEveryExtraTypeWithItsNameAndLine() throws IOException {
+  public void reportsEveryExtraTypeWithItsNameAndLine() throws IOException {
     Path file = source("Main.java", """
         class Main {}
         class Helper {}
@@ -47,21 +47,21 @@ class TopLevelTypesTest {
   }
 
   @Test
-  void keepsTheFileNamedTypeEvenWhenItComesLast() throws IOException {
+  public void keepsTheFileNamedTypeEvenWhenItComesLast() throws IOException {
     source("Main.java", "class Helper {}\nclass Main {}");
     assertThat(analyzer().analyze(sourceRoot).violations())
         .extracting(Violation::subject).containsExactly("Helper");
   }
 
   @Test
-  void keepsFirstTypeWhenNoNameMatches() throws IOException {
+  public void keepsFirstTypeWhenNoNameMatches() throws IOException {
     Path file = source("Other.java", "class First {}\nclass Second {}");
     assertThat(analyzer().analyze(List.of(file)).violations())
         .extracting(Violation::subject).containsExactly("Second");
   }
 
   @Test
-  void ignoresNestedLocalAndAnonymousTypes() throws IOException {
+  public void ignoresNestedLocalAndAnonymousTypes() throws IOException {
     Path file = source("Main.java", """
         class Main {
           static class Nested {}
@@ -73,13 +73,13 @@ class TopLevelTypesTest {
   }
 
   @Test
-  void acceptsFilesWithoutTypes() throws IOException {
+  public void acceptsFilesWithoutTypes() throws IOException {
     Path file = source("package-info.java", "package example;");
     assertThat(analyzer().analyze(List.of(file)).violations()).isEmpty();
   }
 
   @Test
-  void honorsClassExclusionsWithoutChangingThePrimaryType() throws IOException {
+  public void honorsClassExclusionsWithoutChangingThePrimaryType() throws IOException {
     Path file = source("Main.java", "class Main {}\nclass Ignored {}\nclass Helper {}");
     AnalysisResult result = new ObjectCalisthenicsAnalyzer(rules(), List.of("Ignored"))
         .analyze(List.of(file));

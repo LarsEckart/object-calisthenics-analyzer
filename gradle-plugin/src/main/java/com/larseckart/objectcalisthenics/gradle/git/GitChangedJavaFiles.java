@@ -1,4 +1,4 @@
-package com.larseckart.objectcalisthenics.gradle;
+package com.larseckart.objectcalisthenics.gradle.git;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
@@ -22,11 +22,11 @@ import java.util.Set;
 public abstract class GitChangedJavaFiles implements ValueSource<Set<File>, GitChangedJavaFiles.Parameters> {
 
   public interface Parameters extends ValueSourceParameters {
-    Property<String> getProjectDirectory();
+    public Property<String> getProjectDirectory();
   }
 
   @Inject
-  protected abstract ExecOperations getExecOperations();
+  public abstract ExecOperations getExecOperations();
 
   @Override
   public Set<File> obtain() {
@@ -43,7 +43,7 @@ public abstract class GitChangedJavaFiles implements ValueSource<Set<File>, GitC
         .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
   }
 
-  static Set<File> inSourceSet(Set<File> changed, FileCollection sourceFiles) {
+  public static Set<File> inSourceSet(Set<File> changed, FileCollection sourceFiles) {
     Set<Path> sources = new HashSet<>();
     for (File file : sourceFiles.getFiles()) {
       sources.add(file.toPath().toAbsolutePath().normalize());

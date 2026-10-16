@@ -1,4 +1,7 @@
-package com.larseckart.objectcalisthenics.analyzer;
+package com.larseckart.objectcalisthenics.analyzer.checks;
+
+import com.larseckart.objectcalisthenics.analyzer.Violation;
+import com.larseckart.objectcalisthenics.analyzer.ViolationContext;
 
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -27,11 +30,11 @@ class GetterChecker {
 
   private final boolean strictNames;
 
-  GetterChecker(boolean strictNames) {
+  public GetterChecker(boolean strictNames) {
     this.strictNames = strictNames;
   }
 
-  void check(MethodDeclaration method, Path file, Consumer<Violation> violations) {
+  public void check(MethodDeclaration method, Path file, Consumer<Violation> violations) {
     if (!looksLikeGetter(method)) {
       return;
     }
@@ -72,7 +75,7 @@ class GetterChecker {
     return expression.asFieldAccessExpr().getNameAsString();
   }
 
-  boolean looksLikeGetter(MethodDeclaration method) {
+  private boolean looksLikeGetter(MethodDeclaration method) {
     if (!hasGetterPrefix(method.getNameAsString())) {
       return false;
     }

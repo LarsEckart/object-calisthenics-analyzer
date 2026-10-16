@@ -1,4 +1,6 @@
-package com.larseckart.objectcalisthenics.analyzer;
+package com.larseckart.objectcalisthenics.analyzer.checks;
+
+import com.larseckart.objectcalisthenics.analyzer.Violation;
 
 import com.github.javaparser.ast.body.TypeDeclaration;
 
@@ -27,11 +29,11 @@ class ClassLengthChecker {
 
   private final int maxClassLines;
 
-  ClassLengthChecker(int maxClassLines) {
+  public ClassLengthChecker(int maxClassLines) {
     this.maxClassLines = maxClassLines;
   }
 
-  void check(TypeDeclaration<?> type, Path file, Consumer<Violation> violations) {
+  public void check(TypeDeclaration<?> type, Path file, Consumer<Violation> violations) {
     if (type.getBegin().isEmpty() || type.getEnd().isEmpty()) {
       return;
     }

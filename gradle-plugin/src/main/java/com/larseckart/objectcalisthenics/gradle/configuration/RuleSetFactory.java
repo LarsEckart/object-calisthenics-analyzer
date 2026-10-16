@@ -1,15 +1,15 @@
-package com.larseckart.objectcalisthenics.gradle;
+package com.larseckart.objectcalisthenics.gradle.configuration;
 
 import com.larseckart.objectcalisthenics.analyzer.Rule;
 import com.larseckart.objectcalisthenics.analyzer.RuleSet;
 
-final class RuleSetFactory {
+public final class RuleSetFactory {
 
   private RuleSetFactory() {
     // utility class
   }
 
-  static RuleSet from(ObjectCalisthenicsRules rules) {
+  public static RuleSet from(ObjectCalisthenicsRules rules) {
     RuleSet.Builder builder = RuleSet.builder()
         .maxClassLines(rules.getMaxClassLines().get())
         .maxFieldsPerClass(rules.getMaxFieldsPerClass().get())

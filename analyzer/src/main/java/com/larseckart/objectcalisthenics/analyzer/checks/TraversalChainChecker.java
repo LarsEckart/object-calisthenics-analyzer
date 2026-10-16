@@ -1,4 +1,7 @@
-package com.larseckart.objectcalisthenics.analyzer;
+package com.larseckart.objectcalisthenics.analyzer.checks;
+
+import com.larseckart.objectcalisthenics.analyzer.RuleSet;
+import com.larseckart.objectcalisthenics.analyzer.Violation;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
@@ -28,11 +31,11 @@ class TraversalChainChecker {
 
   private final RuleSet rules;
 
-  TraversalChainChecker(RuleSet rules) {
+  public TraversalChainChecker(RuleSet rules) {
     this.rules = rules;
   }
 
-  void check(
+  public void check(
       CompilationUnit unit,
       Path file,
       Set<String> excludedClassNames,

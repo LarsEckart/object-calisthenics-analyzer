@@ -1,4 +1,5 @@
-package com.larseckart.objectcalisthenics.analyzer;
+package com.larseckart.objectcalisthenics.analyzer.checks;
+
 
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
@@ -28,7 +29,7 @@ final class CollectionTypes {
           "ConcurrentLinkedQueue", "ConcurrentLinkedDeque", "LinkedBlockingDeque", "BlockingDeque",
           "Iterable");
 
-  static boolean isCollectionType(Type type) {
+  public static boolean isCollectionType(Type type) {
     if (type.isArrayType()) {
       return true;
     }

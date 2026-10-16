@@ -1,4 +1,5 @@
-package com.larseckart.objectcalisthenics.analyzer;
+package com.larseckart.objectcalisthenics.analyzer.checks;
+
 
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -16,7 +17,7 @@ import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
  */
 class NestingDepthCalculator {
 
-  Nesting measure(MethodDeclaration method) {
+  public Nesting measure(MethodDeclaration method) {
     return method.getBody()
         .map(body -> {
           NestingDepthVisitor visitor = new NestingDepthVisitor();

@@ -17,7 +17,7 @@ class RawTypePolicyCheckerTest {
   Path tempDir;
 
   @Test
-  void reportsRawDeclarationsWhoseTypesAreNotAllowedByPolicy() throws IOException {
+  public void reportsRawDeclarationsWhoseTypesAreNotAllowedByPolicy() throws IOException {
     Path source = writeSource("Customer.java", """
         class Customer {
           private String email;
@@ -44,7 +44,7 @@ class RawTypePolicyCheckerTest {
   }
 
   @Test
-  void defaultConfigurationLeavesStrictRawTypePolicyDisabled() throws IOException {
+  public void defaultConfigurationLeavesStrictRawTypePolicyDisabled() throws IOException {
     Path source = writeSource("Customer.java", """
         record Customer(String email, int age) {
         }

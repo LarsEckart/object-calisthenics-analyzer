@@ -1,4 +1,8 @@
-package com.larseckart.objectcalisthenics.analyzer;
+package com.larseckart.objectcalisthenics.cli;
+
+import com.larseckart.objectcalisthenics.analyzer.AnalysisResult;
+import com.larseckart.objectcalisthenics.analyzer.ObjectCalisthenicsAnalyzer;
+import com.larseckart.objectcalisthenics.analyzer.Violation;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

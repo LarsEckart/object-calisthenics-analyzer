@@ -1,4 +1,9 @@
-package com.larseckart.objectcalisthenics.gradle;
+package com.larseckart.objectcalisthenics.gradle.tasks;
+
+import com.larseckart.objectcalisthenics.gradle.baseline.Baseline;
+import com.larseckart.objectcalisthenics.gradle.configuration.ObjectCalisthenicsRules;
+import com.larseckart.objectcalisthenics.gradle.configuration.RuleSetFactory;
+import com.larseckart.objectcalisthenics.gradle.reporting.MetricsPrinter;
 
 import com.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.larseckart.objectcalisthenics.analyzer.ObjectCalisthenicsAnalyzer;

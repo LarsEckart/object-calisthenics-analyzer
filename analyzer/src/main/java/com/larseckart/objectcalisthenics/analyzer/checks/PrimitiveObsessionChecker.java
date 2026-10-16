@@ -1,4 +1,6 @@
-package com.larseckart.objectcalisthenics.analyzer;
+package com.larseckart.objectcalisthenics.analyzer.checks;
+
+import com.larseckart.objectcalisthenics.analyzer.Violation;
 
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.CallableDeclaration;
@@ -88,11 +90,11 @@ class PrimitiveObsessionChecker {
 
   private final int threshold;
 
-  PrimitiveObsessionChecker(int threshold) {
+  public PrimitiveObsessionChecker(int threshold) {
     this.threshold = threshold;
   }
 
-  void check(TypeDeclaration<?> type, Path file, Consumer<Violation> violations) {
+  public void check(TypeDeclaration<?> type, Path file, Consumer<Violation> violations) {
     if (threshold < 0) {
       return;
     }

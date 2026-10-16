@@ -1,4 +1,4 @@
-package com.larseckart.objectcalisthenics.gradle;
+package com.larseckart.objectcalisthenics.gradle.reporting;
 
 import com.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.larseckart.objectcalisthenics.analyzer.Violation;
@@ -20,7 +20,7 @@ class MetricsPrinterTest {
   Path projectDirectory;
 
   @Test
-  void printsSortedRelativeFindingsAndAdviceOncePerRule() {
+  public void printsSortedRelativeFindingsAndAdviceOncePerRule() {
     AnalysisResult result = new AnalysisResult(List.of(
         violation("src/main/java/Zebra.java", 20, "too-many-instance-fields", "late", "late finding"),
         violation("src/main/java/Zebra.java", 3, "too-many-instance-fields", "early", "early finding"),
@@ -51,7 +51,7 @@ class MetricsPrinterTest {
   }
 
   @Test
-  void printsSiblingSourcesRelativeToTheProject() {
+  public void printsSiblingSourcesRelativeToTheProject() {
     Path siblingSource = projectDirectory.resolveSibling("shared/Shared.java");
     AnalysisResult result = new AnalysisResult(List.of(
         new Violation(siblingSource, 7, "else-used", "choose", "choose uses else")
@@ -66,7 +66,7 @@ class MetricsPrinterTest {
   }
 
   @Test
-  void printsSourceContextAfterItsFindingAndKeepsRuleAdvice() {
+  public void printsSourceContextAfterItsFindingAndKeepsRuleAdvice() {
     Violation violation = new Violation(
         projectDirectory.resolve("src/main/java/Order.java"),
         4,

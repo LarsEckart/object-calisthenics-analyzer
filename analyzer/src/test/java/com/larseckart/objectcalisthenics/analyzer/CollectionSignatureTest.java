@@ -15,7 +15,7 @@ class CollectionSignatureTest {
   @TempDir Path sourceRoot;
 
   @Test
-  void reportsBothSidesOfTheTournamentSignature() throws IOException {
+  public void reportsBothSidesOfTheTournamentSignature() throws IOException {
     List<Violation> findings = findings("""
         class ConfigureSearch {
           public java.util.List<TournamentEvent> events(
@@ -31,12 +31,12 @@ class CollectionSignatureTest {
   }
 
   @Test
-  void providesCollectionDesignAdvice() {
+  public void providesCollectionDesignAdvice() {
     assertThat(Advice.forRule("unwrapped-collection").principle()).contains("collection");
   }
 
   @Test
-  void includesPrivateAbstractInterfaceAndNestedMethods() throws IOException {
+  public void includesPrivateAbstractInterfaceAndNestedMethods() throws IOException {
     List<Violation> findings = findings("""
         abstract class Example {
           private void helper(java.util.Set<String> names) {}
@@ -49,7 +49,7 @@ class CollectionSignatureTest {
   }
 
   @Test
-  void recognizesArraysVarargsAndCommonImplementations() throws IOException {
+  public void recognizesArraysVarargsAndCommonImplementations() throws IOException {
     List<Violation> findings = findings("""
         class Example {
           int[] numbers(String... names) { return null; }
@@ -60,7 +60,7 @@ class CollectionSignatureTest {
   }
 
   @Test
-  void exemptsWrapperConstructorsButNotTheirMethods() throws IOException {
+  public void exemptsWrapperConstructorsButNotTheirMethods() throws IOException {
     List<Violation> findings = findings("""
         class Environment {
           static int ignored;
@@ -76,7 +76,7 @@ class CollectionSignatureTest {
   }
 
   @Test
-  void checksNonWrapperConstructors() throws IOException {
+  public void checksNonWrapperConstructors() throws IOException {
     List<Violation> findings = findings("""
         class Example {
           Example(java.util.List<String> lines) {}
@@ -86,7 +86,7 @@ class CollectionSignatureTest {
   }
 
   @Test
-  void honorsMethodConstructorAndTypeSuppressions() throws IOException {
+  public void honorsMethodConstructorAndTypeSuppressions() throws IOException {
     List<Violation> findings = findings("""
         class Example {
           @SuppressWarnings({"unused", "calisthenics:unwrapped-collection"})
@@ -102,7 +102,7 @@ class CollectionSignatureTest {
   }
 
   @Test
-  void leavesDomainTypesPrimitivesAndNestedGenericArgumentsAlone() throws IOException {
+  public void leavesDomainTypesPrimitivesAndNestedGenericArgumentsAlone() throws IOException {
     List<Violation> findings = findings("""
         class Example {
           Environment read(java.nio.file.Path path) { return null; }
@@ -116,7 +116,7 @@ class CollectionSignatureTest {
   }
 
   @Test
-  void honorsExistingRuleSwitchAndClassExclusions() throws IOException {
+  public void honorsExistingRuleSwitchAndClassExclusions() throws IOException {
     Path file = source("class Example { java.util.List<String> values() { return null; } }");
     RuleSet disabled = RuleSet.builder().disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS).build();
     assertThat(signatureFindings(new ObjectCalisthenicsAnalyzer(disabled), file)).isEmpty();

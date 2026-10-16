@@ -1,4 +1,4 @@
-package com.larseckart.objectcalisthenics.gradle;
+package com.larseckart.objectcalisthenics.gradle.baseline;
 
 import com.larseckart.objectcalisthenics.analyzer.Violation;
 
@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-final class Baseline {
+public final class Baseline {
 
   private static final String HEADER = "# Object Calisthenics baseline v1";
 
@@ -23,7 +23,7 @@ final class Baseline {
     this.projectDirectory = projectDirectory.toAbsolutePath().normalize();
   }
 
-  static Baseline load(Path file, Path projectDirectory) {
+  public static Baseline load(Path file, Path projectDirectory) {
     if (!Files.exists(file)) {
       return new Baseline(Set.of(), projectDirectory);
     }
@@ -41,7 +41,7 @@ final class Baseline {
     }
   }
 
-  static void write(Path file, Path projectDirectory, List<Violation> violations) {
+  public static void write(Path file, Path projectDirectory, List<Violation> violations) {
     Baseline baseline = new Baseline(Set.of(), projectDirectory);
     List<String> lines = baseline.entriesFor(violations).stream()
         .distinct()
@@ -65,7 +65,7 @@ final class Baseline {
     }
   }
 
-  List<Entry> entriesFor(List<Violation> violations) {
+  public List<Entry> entriesFor(List<Violation> violations) {
     return violations.stream()
         .map(violation -> new Entry(
             relativePath(violation.file()),
@@ -75,11 +75,11 @@ final class Baseline {
         .toList();
   }
 
-  List<Entry> newEntries(List<Entry> current) {
+  public List<Entry> newEntries(List<Entry> current) {
     return current.stream().filter(entry -> !entries.contains(entry)).toList();
   }
 
-  List<Entry> staleEntries(List<Entry> current) {
+  public List<Entry> staleEntries(List<Entry> current) {
     Set<Entry> currentEntries = new HashSet<>(current);
     return entries.stream().filter(entry -> !currentEntries.contains(entry)).toList();
   }
@@ -92,7 +92,7 @@ final class Baseline {
     return stablePath.toString().replace(file.getFileSystem().getSeparator(), "/");
   }
 
-  record Entry(String file, String rule, String subject) {
+  public record Entry(String file, String rule, String subject) {
 
     private static Entry parse(String line) {
       String[] fields = line.split("\\t", -1);
