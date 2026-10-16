@@ -72,6 +72,7 @@ unchecked.
 | `baselineFile` | `object-calisthenics-baseline.txt` | Existing violations to ignore. |
 | `ignoreFailures` | `false` | Let the build succeed despite findings. |
 | `exclusions.classNamePatterns` | `[]` | Regexes matching simple class/record names to skip entirely. |
+| `oneTopLevelTypePerFile` | `false` | Optional companion rule: give each top-level type its own file. |
 | `maxClassLines` | `50` | Meaningful-line limit per class. |
 | `maxFieldsPerClass` | `2` | Maximum instance fields per class. |
 | `includeRecordComponentsInFieldRule` | `true` | Count record components as fields. |
@@ -101,6 +102,29 @@ For external API contracts or deliberate boundaries, suppress a method,
 constructor, or type with `@SuppressWarnings("calisthenics:unwrapped-collection")`.
 This is a design smell, not proof that a wrapper would improve the code.
 Type recognition uses simple names, not resolved inheritance.
+
+## Java analyzer settings
+
+Use named settings when calling the analyzer from Java:
+
+```java
+RuleSet rules = RuleSet.builder()
+    .maxClassLines(80)
+    .enable(Rule.ONE_TOP_LEVEL_TYPE_PER_FILE)
+    .build();
+
+AnalysisResult result = new ObjectCalisthenicsAnalyzer(rules).analyze(sourceRoot);
+```
+
+Use `enable(Rule.FORBID_ELSE)` or `disable(Rule.FORBID_ELSE)` for rule switches.
+Numeric limits keep named methods such as `maxClassLines(80)`.
+Unspecified settings keep the defaults. `RuleSet.defaults()` remains available.
+Each build creates an immutable value, independent of later builder changes.
+The builder copies collection inputs and exposes read-only sets.
+
+**Java interface change:** the positional `RuleSet` constructors have been
+removed. Replace those calls with named builder settings. The Gradle settings
+and their defaults have not changed.
 
 ## Tasks
 
@@ -196,6 +220,32 @@ coordinates are left to collection and parser rules. Its score is additive:
 The finding includes its score and evidence. This is a design prompt rather
 than proof that a value object is required; framework, transport, and
 configuration values may intentionally remain primitive.
+
+## Optional companion rules
+
+These support Object Calisthenics but are not part of the nine original rules.
+
+Enable one top-level type per file with:
+
+```kotlin
+objectCalisthenics {
+    rules {
+        oneTopLevelTypePerFile.set(true)
+    }
+}
+```
+
+This reports `multiple-top-level-types` for each extra top-level class, record,
+enum, interface, or annotation type. The type matching the filename stays;
+if none matches, the first type stays. Each finding points to the extra type's
+declaration. Class-name exclusions skip findings for matching types without
+changing which type stays. Nested, local, and anonymous types do not count.
+Files without type declarations produce no finding.
+
+Move extra types into same-named files in the same package. They can stay
+package-private. Do not nest types just to avoid the check: file layout does
+not prove that responsibilities belong together. Class-length checks remain
+unchanged.
 
 ## Rules not yet implemented
 

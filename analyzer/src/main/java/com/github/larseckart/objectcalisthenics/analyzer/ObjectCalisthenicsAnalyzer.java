@@ -117,6 +117,10 @@ public class ObjectCalisthenicsAnalyzer {
         .map(CompilationUnit.Storage::getPath)
         .orElseThrow(() -> new IllegalStateException("Parsed compilation unit has no file path"));
 
+    if (rules.oneTopLevelTypePerFile()) {
+      checkTopLevelTypes(unit, file, violations);
+    }
+
     for (TypeDeclaration<?> type : unit.getTypes()) {
       checkTypeAndMembers(type, file, violations, excludedClasses);
     }
@@ -126,6 +130,27 @@ public class ObjectCalisthenicsAnalyzer {
           .map(ExcludedClass::className)
           .collect(HashSet::new, HashSet::add, HashSet::addAll);
       traversalChainChecker.check(unit, file, excludedClassNames, violations::add);
+    }
+  }
+
+  private void checkTopLevelTypes(CompilationUnit unit, Path file, List<Violation> violations) {
+    if (unit.getTypes().size() < 2) {
+      return;
+    }
+    // Keep the type named by the file, or the first type when none matches.
+    String fileName = file.getFileName().toString();
+    TypeDeclaration<?> primary = unit.getTypes().stream()
+        .filter(type -> fileName.equals(type.getNameAsString() + ".java"))
+        .findFirst()
+        .orElse(unit.getType(0));
+    for (TypeDeclaration<?> type : unit.getTypes()) {
+      if (type != primary && matchingPatterns(type.getNameAsString()).isEmpty()) {
+        violations.add(new Violation(
+            file, type.getBegin().map(position -> position.line).orElse(1),
+            "multiple-top-level-types", type.getNameAsString(),
+            "%s must live in its own source file (one top-level type per file)"
+                .formatted(type.getNameAsString())));
+      }
     }
   }
 

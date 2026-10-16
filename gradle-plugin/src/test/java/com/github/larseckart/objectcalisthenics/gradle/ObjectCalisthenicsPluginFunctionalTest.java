@@ -20,6 +20,31 @@ class ObjectCalisthenicsPluginFunctionalTest {
   Path projectDir;
 
   @Test
+  void companionFileRuleIsOptInAndWorksWithReportsAndBaseline() throws IOException {
+    writeSettings();
+    writeJavaSource("Main.java", "class Main {}\nclass Helper {}\n");
+    writeBuildScript();
+    assertThat(runCheck().getOutput()).doesNotContain("multiple-top-level-types");
+
+    writeBuildScript("rules { oneTopLevelTypePerFile.set(true) }");
+    BuildResult failure = runner("objectCalisthenicsCheck")
+        .withArguments("objectCalisthenicsCheck", "--configuration-cache").buildAndFail();
+    assertThat(failure.getOutput()).contains(
+        "multiple-top-level-types | src/main/java/Main.java:2 | Helper");
+    assertThat(runner("objectCalisthenicsCheck")
+        .withArguments("objectCalisthenicsCheck", "--configuration-cache").buildAndFail()
+        .getOutput()).contains("Reusing configuration cache");
+    runReport();
+    assertThat(Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json")))
+        .contains("multiple-top-level-types", "Helper", "named source file");
+    runner("objectCalisthenicsBaseline").build();
+    assertThat(runCheck().task(":objectCalisthenicsCheck").getOutcome())
+        .isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(Files.readString(projectDir.resolve("object-calisthenics-baseline.txt")))
+        .contains("multiple-top-level-types", "Helper");
+  }
+
+  @Test
   void checkTaskFailsWhenViolationsAreFound() throws IOException {
     writeSettings();
     writeBadJavaSource();

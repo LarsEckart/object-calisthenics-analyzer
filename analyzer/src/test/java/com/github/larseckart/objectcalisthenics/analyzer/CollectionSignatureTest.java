@@ -118,7 +118,7 @@ class CollectionSignatureTest {
   @Test
   void honorsExistingRuleSwitchAndClassExclusions() throws IOException {
     Path file = source("class Example { java.util.List<String> values() { return null; } }");
-    RuleSet disabled = new RuleSet(50, 2, true, true, 1, true, true, false);
+    RuleSet disabled = RuleSet.builder().disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS).build();
     assertThat(signatureFindings(new ObjectCalisthenicsAnalyzer(disabled), file)).isEmpty();
     assertThat(signatureFindings(
         new ObjectCalisthenicsAnalyzer(RuleSet.defaults(), List.of("Example")), file)).isEmpty();

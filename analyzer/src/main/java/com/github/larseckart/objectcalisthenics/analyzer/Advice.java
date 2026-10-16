@@ -83,6 +83,11 @@ public record Advice(String principle, List<String> options, String caution) {
       List.of("Choose the smallest change that improves the design without changing behaviour."),
       "The analyzer found a structural pattern; only code context can confirm the right refactoring.");
   private static final Map<String, Advice> BY_RULE = Map.ofEntries(
+      Map.entry("multiple-top-level-types", new Advice(
+          "Give each top-level type a clear, named source file.",
+          List.of("Move the extra type into a file with the same name, in the same package.",
+              "Keep package-private access when callers outside the package do not need the type."),
+          "This companion rule checks file layout, not whether responsibilities belong together; do not nest types just to hide a finding.")),
       Map.entry("class-too-long", CLASS_TOO_LONG),
       Map.entry("too-many-instance-fields", TOO_MANY_FIELDS),
       Map.entry("too-many-record-components", TOO_MANY_FIELDS),

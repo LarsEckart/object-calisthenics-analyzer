@@ -654,9 +654,7 @@ class PrimitiveObsessionCheckerTest {
   }
 
   private ObjectCalisthenicsAnalyzer analyzer(int threshold) {
-    RuleSet rules = new RuleSet(
-        50, 2, true, true, 1, true, true, true,
-        false, true, Set.of(), Set.of("System.out", "System.err"));
+    RuleSet rules = RuleSet.builder().safeChainRoots(Set.of("System.out", "System.err")).build();
     return new ObjectCalisthenicsAnalyzer(
         rules, new PrimitiveObsessionConfig(threshold), List.of());
   }

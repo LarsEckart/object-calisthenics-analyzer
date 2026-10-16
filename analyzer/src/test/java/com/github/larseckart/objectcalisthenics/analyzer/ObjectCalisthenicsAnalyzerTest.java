@@ -85,7 +85,8 @@ class ObjectCalisthenicsAnalyzerTest {
   @Test
   void canExcludeRecordComponentsFromFieldRule() {
     ObjectCalisthenicsAnalyzer analyzerWithoutRecordComponents = new ObjectCalisthenicsAnalyzer(
-        new RuleSet(50, 2, false, true, 1, true, true, false));
+        RuleSet.builder().disable(Rule.INCLUDE_RECORD_COMPONENTS_IN_FIELD_RULE)
+            .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS).build());
 
     AnalysisResult result = analyzerWithoutRecordComponents.analyze(List.of(
         samplesDir.resolve("../field-rule/TooManyComponentsRecord.java").normalize(),
@@ -204,9 +205,8 @@ class ObjectCalisthenicsAnalyzerTest {
           public boolean isIdle() { return velocity().isZero(); }
         }
         """);
-    ObjectCalisthenicsAnalyzer strictAnalyzer = new ObjectCalisthenicsAnalyzer(new RuleSet(
-        50, 2, true, true, 1, true, true, false,
-        true, false, Set.of(), Set.of()));
+    ObjectCalisthenicsAnalyzer strictAnalyzer = new ObjectCalisthenicsAnalyzer(RuleSet.builder().disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
+        .enable(Rule.STRICT_GETTER_NAMES).disable(Rule.FORBID_TRAVERSAL_CHAINS).safeChainRoots(Set.of()).build());
 
     assertThat(strictAnalyzer.analyze(List.of(source)).violations())
         .anyMatch(violation -> violation.rule().equals("getter"));
@@ -230,10 +230,8 @@ class ObjectCalisthenicsAnalyzerTest {
           }
         }
         """);
-    ObjectCalisthenicsAnalyzer chainAnalyzer = new ObjectCalisthenicsAnalyzer(new RuleSet(
-        50, 2, true, true, 1, true, true, false,
-        false, true, Set.of("minus", "times"),
-        Set.of("System.out", "System.err", "java.lang.System.out", "java.lang.System.err")));
+    ObjectCalisthenicsAnalyzer chainAnalyzer = new ObjectCalisthenicsAnalyzer(RuleSet.builder().disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
+        .fluentChainMethods(Set.of("minus", "times")).build());
 
     List<Violation> chains = chainAnalyzer.analyze(List.of(source)).violations().stream()
         .filter(violation -> violation.rule().equals("traversal-chain"))
@@ -252,7 +250,7 @@ class ObjectCalisthenicsAnalyzerTest {
   @Test
   void detectsNonFirstClassCollectionClass() {
     ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer(
-        new RuleSet(50, 2, true, 1, true, true, true));
+        RuleSet.defaults());
 
     AnalysisResult result = analyzerWithCollectionRule.analyze(
         List.of(samplesDir.resolve("NonFirstClassCollectionClass.java")));
@@ -265,7 +263,7 @@ class ObjectCalisthenicsAnalyzerTest {
   @Test
   void detectsNonFirstClassArrayClass() {
     ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer(
-        new RuleSet(50, 2, true, 1, true, true, true));
+        RuleSet.defaults());
 
     AnalysisResult result = analyzerWithCollectionRule.analyze(
         List.of(samplesDir.resolve("NonFirstClassArrayClass.java")));
@@ -278,7 +276,7 @@ class ObjectCalisthenicsAnalyzerTest {
   @Test
   void cleanFirstClassCollectionAndArrayClassesHaveNoCollectionViolation() {
     ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer(
-        new RuleSet(50, 2, true, 1, true, true, true));
+        RuleSet.defaults());
 
     AnalysisResult result = analyzerWithCollectionRule.analyze(List.of(
         samplesDir.resolve("FirstClassCollectionClass.java"),
@@ -305,7 +303,7 @@ class ObjectCalisthenicsAnalyzerTest {
         }
         """);
     ObjectCalisthenicsAnalyzer analyzerWithExclusions = new ObjectCalisthenicsAnalyzer(
-        new RuleSet(50, 2, true, true, 1, true, true, false, false, true, Set.of(), Set.of()),
+        RuleSet.builder().disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS).safeChainRoots(Set.of()).build(),
         List.of(".*Response$"));
 
     AnalysisResult result = analyzerWithExclusions.analyze(List.of(source));
@@ -329,9 +327,7 @@ class ObjectCalisthenicsAnalyzerTest {
           }
         }
         """);
-    ObjectCalisthenicsAnalyzer chainAnalyzer = new ObjectCalisthenicsAnalyzer(new RuleSet(
-        50, 2, true, true, 1, true, true, false,
-        false, true, Set.of(), Set.of()));
+    ObjectCalisthenicsAnalyzer chainAnalyzer = new ObjectCalisthenicsAnalyzer(RuleSet.builder().disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS).safeChainRoots(Set.of()).build());
 
     List<Violation> chains = chainAnalyzer.analyze(List.of(source)).violations().stream()
         .filter(v -> v.rule().equals("traversal-chain"))

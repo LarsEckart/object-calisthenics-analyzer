@@ -1,5 +1,39 @@
 # Object Calisthenics Analyzer — Java + JavaParser + Gradle Plugin
 
+## Optional companion rule: one top-level type per file
+
+This file-layout rule supports Object Calisthenics but is not one of its nine
+rules. `rules.oneTopLevelTypePerFile` defaults to `false`.
+
+When enabled, inspect only the compilation unit's direct type declarations:
+classes, records, enums, interfaces, and annotation types. Keep the declaration
+whose simple name matches the filename without `.java`; if none matches, keep
+the first declaration. Report each other declaration as
+`multiple-top-level-types`, using its name and starting source line.
+Skip findings for types matching class-name exclusions; exclusions do not
+change the primary declaration. Nested, local, and anonymous types do not
+count. Empty compilation units and files with one type pass. Existing class
+length checks do not change.
+
+Findings use the normal advice, JSON, baseline, and build-failure paths.
+Advice recommends a same-named file in the same package, keeping package-private
+access where possible. This checks layout, not shared responsibility, and
+must not encourage nesting unrelated types to hide findings.
+
+## Java rule settings
+
+`RuleSet` is an immutable value created through `RuleSet.defaults()` or
+`RuleSet.builder()`. The builder starts with the existing rule defaults and
+accepts `enable(Rule)` / `disable(Rule)` switches and named numeric limits.
+Store enabled switches as a set of `Rule` values, not independent boolean fields.
+`build()` takes a snapshot: later builder changes must
+not change an existing rule set. Copy collection inputs when configured and
+expose read-only sets. Rule sets retain value equality and matching hash codes.
+
+The positional constructors are removed. Direct Java callers must migrate to
+the builder; Gradle callers keep the same settings. The optional file-layout
+rule stays off by default.
+
 ## Goal
 
 Build a small, testable Gradle plugin that analyses Java source code and reports Object Calisthenics violations. The first version should reproduce — and then improve on — the Python `measure.sh` script used in `padel-slop-kata`. It should run as part of a normal Gradle build and produce both a failure-on-violation task and a report task.

@@ -15,6 +15,9 @@ import java.util.Set;
 public abstract class ObjectCalisthenicsRules {
 
   @Input
+  public abstract Property<Boolean> getOneTopLevelTypePerFile();
+
+  @Input
   public abstract Property<Integer> getMaxClassLines();
 
   @Input
@@ -61,6 +64,7 @@ public abstract class ObjectCalisthenicsRules {
 
   @Inject
   public ObjectCalisthenicsRules() {
+    getOneTopLevelTypePerFile().convention(false);
     getMaxClassLines().convention(50);
     getMaxFieldsPerClass().convention(2);
     getIncludeRecordComponentsInFieldRule().convention(true);

@@ -108,6 +108,7 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
   }
 
   private void linkRules(ObjectCalisthenicsRules target, ObjectCalisthenicsRules source) {
+    target.getOneTopLevelTypePerFile().set(source.getOneTopLevelTypePerFile());
     target.getMaxClassLines().set(source.getMaxClassLines());
     target.getMaxFieldsPerClass().set(source.getMaxFieldsPerClass());
     target.getIncludeRecordComponentsInFieldRule().set(source.getIncludeRecordComponentsInFieldRule());
