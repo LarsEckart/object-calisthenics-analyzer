@@ -1,0 +1,715 @@
+package com.larseckart.objectcalisthenics.gradle;
+
+import org.gradle.testkit.runner.BuildResult;
+import org.gradle.testkit.runner.GradleRunner;
+import org.gradle.testkit.runner.TaskOutcome;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class ObjectCalisthenicsPluginFunctionalTest {
+
+  @TempDir
+  Path projectDir;
+
+  @Test
+  void companionFileRuleIsOptInAndWorksWithReportsAndBaseline() throws IOException {
+    writeSettings();
+    writeJavaSource("Main.java", "class Main {}\nclass Helper {}\n");
+    writeBuildScript();
+    assertThat(runCheck().getOutput()).doesNotContain("multiple-top-level-types");
+
+    writeBuildScript("rules { oneTopLevelTypePerFile.set(true) }");
+    BuildResult failure = runner("objectCalisthenicsCheck")
+        .withArguments("objectCalisthenicsCheck", "--configuration-cache").buildAndFail();
+    assertThat(failure.getOutput()).contains(
+        "multiple-top-level-types | src/main/java/Main.java:2 | Helper");
+    assertThat(runner("objectCalisthenicsCheck")
+        .withArguments("objectCalisthenicsCheck", "--configuration-cache").buildAndFail()
+        .getOutput()).contains("Reusing configuration cache");
+    runReport();
+    assertThat(Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json")))
+        .contains("multiple-top-level-types", "Helper", "named source file");
+    runner("objectCalisthenicsBaseline").build();
+    assertThat(runCheck().task(":objectCalisthenicsCheck").getOutcome())
+        .isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(Files.readString(projectDir.resolve("object-calisthenics-baseline.txt")))
+        .contains("multiple-top-level-types", "Helper");
+  }
+
+  @Test
+  void checkTaskFailsWhenViolationsAreFound() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    writeBuildScript();
+
+    BuildResult result = runCheckAndFail();
+
+    assertCheckOutputContainsHeadlineFailure(result);
+    assertThat(projectDir.resolve("build/reports/calisthenics/calisthenics.json"))
+        .doesNotExist();
+  }
+
+  @Test
+  void ignoreFailuresReportsViolationsWithoutFailing() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    writeBuildScript("""
+        ignoreFailures.set(true)
+        """);
+
+    BuildResult result = runCheck();
+
+    assertThat(result.getOutput()).contains("METRIC violations=2");
+    assertThat(result.getOutput()).contains(
+        "Object Calisthenics: 2 violations found; ignoring failures as configured.");
+    assertThat(result.getOutput()).doesNotContain("new violation(s)");
+  }
+
+  @Test
+  void changedCheckOnlyAnalyzesUntrackedJavaInTheSourceSet() throws IOException, InterruptedException {
+    writeSettings();
+    writeBadJavaSource();
+    writeBuildScript();
+    initializeGitAndCommit();
+    writeJavaSource("New.java", "class New { private int value; public int getValue() { return value; } }");
+    Files.writeString(projectDir.resolve("Outside.java"),
+        "class Outside { private int value; public int getValue() { return value; } }");
+
+    BuildResult result = runner("objectCalisthenicsCheckChanged")
+        .withArguments("objectCalisthenicsCheckChanged", "--configuration-cache")
+        .buildAndFail();
+
+    assertThat(result.getOutput()).contains("Object Calisthenics: 1 violations found");
+    assertThat(result.getOutput()).contains("Configuration cache entry stored");
+    assertThat(result.getOutput()).doesNotContain("Bad.java:").doesNotContain("Outside.java:");
+
+    Files.delete(projectDir.resolve("src/main/java/New.java"));
+    BuildResult noChanges = runner("objectCalisthenicsCheckChanged")
+        .withArguments("objectCalisthenicsCheckChanged", "--configuration-cache")
+        .build();
+    assertThat(noChanges.task(":objectCalisthenicsCheckChanged").getOutcome())
+        .isEqualTo(TaskOutcome.NO_SOURCE);
+  }
+
+  @Test
+  void changedCheckIncludesStagedAndUnstagedChanges() throws IOException, InterruptedException {
+    writeSettings();
+    writeBadJavaSource();
+    writeJavaSource("Unstaged.java", "class Unstaged {}\n");
+    writeBuildScript();
+    initializeGitAndCommit();
+    Path badSource = projectDir.resolve("src/main/java/Bad.java");
+    Files.writeString(badSource, "\n" + Files.readString(badSource));
+    git(List.of("add", "src/main/java/Bad.java"));
+    Files.writeString(projectDir.resolve("src/main/java/Unstaged.java"),
+        "class Unstaged { private int value; public int getValue() { return value; } }\n");
+
+    BuildResult result = runner("objectCalisthenicsCheckChanged").buildAndFail();
+
+    assertThat(result.getOutput()).contains("Object Calisthenics: 3 violations found");
+    assertThat(result.getOutput()).contains("Bad.java:", "Unstaged.java:");
+  }
+
+  @Test
+  void changedCheckSkipsWhenNoJavaFilesChanged() throws IOException, InterruptedException {
+    writeSettings();
+    writeBadJavaSource();
+    writeBuildScript();
+    initializeGitAndCommit();
+
+    BuildResult result = runner("objectCalisthenicsCheckChanged").build();
+
+    assertThat(result.task(":objectCalisthenicsCheckChanged").getOutcome()).isEqualTo(TaskOutcome.NO_SOURCE);
+  }
+
+  @Test
+  void changedCheckDoesNotReportStaleEntriesFromUntouchedFiles() throws IOException, InterruptedException {
+    writeSettings();
+    writeBadJavaSource();
+    writeJavaSource("Clean.java", "class Clean {}\n");
+    writeBuildScript("ignoreFailures.set(true)");
+    initializeGitAndCommit();
+    runner("objectCalisthenicsBaseline").build();
+    Files.writeString(projectDir.resolve("src/main/java/Clean.java"),
+        "class Clean { private int value; public int getValue() { return value; } }\n");
+
+    BuildResult result = runner("objectCalisthenicsCheckChanged").build();
+
+    assertThat(result.getOutput()).contains("1 new violation(s)");
+    assertThat(result.getOutput()).doesNotContain("stale entries");
+  }
+
+  @Test
+  void changedCheckFailsClearlyOutsideGit() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    writeBuildScript();
+
+    BuildResult result = runner("objectCalisthenicsCheckChanged").buildAndFail();
+
+    assertThat(result.getOutput()).contains("Cannot select changed Java files");
+  }
+
+  @Test
+  void baselineIgnoresExistingViolationsAndLineChangesButRejectsNewOnes() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    writeBuildScript();
+
+    BuildResult baselineResult = runner("objectCalisthenicsBaseline").build();
+
+    Path baseline = projectDir.resolve("object-calisthenics-baseline.txt");
+    assertThat(baseline).exists();
+    assertThat(Files.readString(baseline))
+        .contains("src/main/java/Bad.java")
+        .contains("class-too-long")
+        .contains("too-many-instance-fields");
+    assertThat(baselineResult.getOutput()).contains("Wrote 2 Object Calisthenics baseline entries");
+
+    Path badSource = projectDir.resolve("src/main/java/Bad.java");
+    Files.writeString(badSource, "\n\n" + Files.readString(badSource));
+    runCheck();
+
+    Files.writeString(projectDir.resolve("src/main/java/NewViolation.java"), """
+        public class NewViolation {
+          private int value;
+
+          public int getValue() {
+            return value;
+          }
+        }
+        """);
+
+    BuildResult failedCheck = runCheckAndFail();
+    assertThat(failedCheck.getOutput())
+        .contains("Object Calisthenics violations found: 1 new, 2 baselined");
+
+    writeBuildScript("ignoreFailures.set(true)");
+    BuildResult ignoredCheck = runCheck();
+    assertThat(ignoredCheck.getOutput())
+        .contains("Object Calisthenics violations found: 1 new violation(s); ignoring failures as configured.");
+  }
+
+  @Test
+  void checkReportsStaleBaselineEntries() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    writeBuildScript();
+    runner("objectCalisthenicsBaseline").build();
+
+    Files.delete(projectDir.resolve("src/main/java/Bad.java"));
+    Files.writeString(projectDir.resolve("src/main/java/Clean.java"), "class Clean {}\n");
+
+    BuildResult result = runCheck();
+
+    assertThat(result.getOutput())
+        .contains("baseline has 2 stale entries")
+        .contains("objectCalisthenicsBaseline");
+  }
+
+  @Test
+  void baselineRespectsClassNameExclusions() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    writeBuildScript("""
+        exclusions {
+            classNamePatterns.add("Bad")
+        }
+        """);
+
+    BuildResult baselineResult = runner("objectCalisthenicsBaseline").build();
+    assertThat(baselineResult.getOutput()).contains("Wrote 0 Object Calisthenics baseline entries");
+
+    Path baseline = projectDir.resolve("object-calisthenics-baseline.txt");
+    assertThat(baseline).exists();
+    assertThat(Files.readString(baseline)).doesNotContain("Bad.java");
+
+    BuildResult checkResult = runCheck();
+    assertThat(checkResult.getOutput()).doesNotContain("stale");
+  }
+
+  @Test
+  void excludedResponseDoesNotCreateStaleBaselineEntry() throws IOException {
+    writeSettings();
+    writeJavaSource("ExcludedResponse.java", """
+        class ExcludedResponse {
+          private int first;
+          private int second;
+          private int third;
+
+          public int getFirst() {
+            return first;
+          }
+        }
+        """);
+    writeBuildScript("""
+        exclusions {
+            classNamePatterns.add(".*Response$")
+        }
+        """);
+
+    BuildResult baselineResult = runner("objectCalisthenicsBaseline").build();
+    assertThat(baselineResult.getOutput()).contains("Wrote 0 Object Calisthenics baseline entries");
+
+    Path baseline = projectDir.resolve("object-calisthenics-baseline.txt");
+    assertThat(baseline).exists();
+    assertThat(Files.readString(baseline)).doesNotContain("ExcludedResponse");
+
+    BuildResult checkResult = runCheck();
+    assertThat(checkResult.getOutput())
+        .contains("violations=0")
+        .doesNotContain("stale");
+  }
+
+  @Test
+  void reportTaskWritesJsonWithoutFailing() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    writeBuildScript();
+
+    runReport();
+
+    assertJsonReportContainsClassViolation(reportJson());
+  }
+
+  @Test
+  void independentlyRegisteredReportTaskUsesProjectDirectoryByDefault() throws IOException {
+    writeSettings();
+    writeBadJavaSource();
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        tasks.register<com.larseckart.objectcalisthenics.gradle.ObjectCalisthenicsReportTask>("customReport") {
+            sourceFiles.from(sourceSets.main.get().allJava)
+            classNamePatterns.set(emptyList())
+            json.set(layout.buildDirectory.file("reports/calisthenics/custom.json"))
+            consoleSummary.set(true)
+        }
+        """);
+
+    BuildResult result = runner("customReport").build();
+
+    assertThat(result.getOutput()).contains("class-too-long | src/main/java/Bad.java:1 |");
+    assertThat(projectDir.resolve("build/reports/calisthenics/custom.json")).exists();
+  }
+
+  @Test
+  void reportTaskAppliesConfiguredFirstClassCollectionRule() throws IOException {
+    String json = runReportTaskWithSourceAndConfig(
+        "CollectionOwner.java",
+        """
+            import java.util.List;
+
+            class CollectionOwner {
+              private List<String> values;
+              private int count;
+            }
+            """,
+        """
+            rules {
+                forbidNonFirstClassCollections.set(true)
+            }
+            """);
+
+    assertThat(json).contains("\"non_first_class_collections\": 1");
+    assertThat(json).contains("\"rule\": \"non-first-class-collection\"");
+  }
+
+  @Test
+  void signatureFindingsUseTheExistingCollectionSwitch() throws IOException {
+    String source = """
+        class Search {
+          java.util.List<String> events(java.util.Map<String, String> env) { return null; }
+        }
+        """;
+    String enabled = runReportTaskWithSourceAndConfig("Search.java", source, """
+        rules { forbidNonFirstClassCollections.set(true) }
+        """);
+    assertThat(enabled).contains("\"unwrapped_collections\": 2");
+    assertThat(enabled).contains("\"rule\": \"unwrapped-collection\"");
+    assertThat(enabled).contains("\"subject\": \"Search.events\"");
+
+    String disabled = runReportTaskWithSourceAndConfig("Search.java", source, """
+        rules { forbidNonFirstClassCollections.set(false) }
+        """);
+    assertThat(disabled).contains("\"unwrapped_collections\": 0");
+    assertThat(disabled).doesNotContain("\"rule\": \"unwrapped-collection\"");
+  }
+
+  @Test
+  void reportTaskCanExcludeRecordComponentsFromFieldRule() throws IOException {
+    String json = runReportTaskWithSourceAndConfig(
+        "Configuration.java",
+        """
+            record Configuration(String host, int port, boolean secure) {
+            }
+            """,
+        """
+            rules {
+                includeRecordComponentsInFieldRule.set(false)
+            }
+            """);
+
+    assertThat(json).contains("\"violations\": 0");
+    assertThat(json).doesNotContain("too-many-record-components");
+  }
+
+  @Test
+  void reportTaskAppliesGetterAndTraversalConfiguration() throws IOException {
+    writeSettings();
+    Path sourceDir = projectDir.resolve("src/main/java/");
+    Files.createDirectories(sourceDir);
+    Files.writeString(sourceDir.resolve("ConfiguredRules.java"), """
+        class ConfiguredRules {
+          public boolean isReady() { return calculateReadiness(); }
+          public Object address() { return customer().address(); }
+        }
+        """);
+    writeBuildScript("""
+        rules {
+            strictGetterNames.set(true)
+            forbidTraversalChains.set(true)
+            fluentChainMethods.set(setOf("with", "build"))
+            safeChainRoots.set(setOf("System.out"))
+        }
+        """);
+
+    runReport();
+    String json = reportJson();
+
+    assertThat(json).contains("\"getter_setter_methods\": 1");
+    assertThat(json).contains("\"traversal_chains\": 1");
+    assertThat(json).contains("\"rule\": \"traversal-chain\"");
+  }
+
+  @Test
+  void reportTaskIncludesPrimitiveObsessionFindings() throws IOException {
+    String json = runReportTaskWithSourceAndConfig(
+        "Accounts.java",
+        """
+            class Accounts {
+              void register(String email) {
+                validateEmail(email);
+              }
+
+              private void validateEmail(String email) {
+                if (email.isBlank()) {
+                  throw new IllegalArgumentException();
+                }
+              }
+            }
+            """,
+        """
+            rules {
+                primitiveObsessionThreshold.set(5)
+            }
+            """);
+
+    assertThat(json).contains("\"primitive_obsessions\": 1");
+    assertThat(json).contains("\"rule\": \"primitive-obsession\"");
+    assertThat(json).contains("\"subject\": \"email\"");
+  }
+
+  @Test
+  void reportTaskAppliesPrimitiveObsessionThreshold() throws IOException {
+    String json = runReportTaskWithSourceAndConfig(
+        "Accounts.java",
+        """
+            class Accounts {
+              void register(String email) {
+                validateEmail(email);
+              }
+
+              private void validateEmail(String email) {
+                if (email.isBlank()) {
+                  throw new IllegalArgumentException();
+                }
+              }
+            }
+            """,
+        """
+            rules {
+                primitiveObsessionThreshold.set(8)
+            }
+            """);
+
+    assertThat(json).contains("\"primitive_obsessions\": 0");
+    assertThat(json).doesNotContain("\"rule\": \"primitive-obsession\"");
+  }
+
+  @Test
+  void reportTaskAppliesRawTypePolicyAndBoundaryExceptions() throws IOException {
+    String json = runReportTaskWithSourceAndConfig(
+        "Customers.java",
+        """
+            class Customer {
+              private String email;
+            }
+
+            record CustomerRequest(String email, boolean active) {
+            }
+            """,
+        """
+            rules {
+                primitiveObsessionThreshold.set(-1)
+                allowedRawTypes.set(setOf("boolean"))
+                boundaryClassNamePatterns.add(".*Request$")
+            }
+            """);
+
+    assertThat(json).contains("\"raw_domain_primitives\": 1");
+    assertThat(json).contains("\"rule\": \"raw-domain-primitive\"");
+    assertThat(details(json)).contains("Customer.email uses raw String");
+    assertThat(details(json)).doesNotContain("CustomerRequest");
+  }
+
+  @Test
+  void exclusionsIgnoreMatchingClassesAndKeepNonMatchingFailures() throws IOException {
+    writeSettings();
+    writeJavaSource("ApiTypes.java", """
+        class JoinMatchResponse {
+          private int first;
+          private int second;
+          private int third;
+
+          public int getFirst() {
+            return first;
+          }
+        }
+
+        class JoinMatchCommand {
+          private int first;
+          private int second;
+          private int third;
+        }
+        """);
+    writeBuildScript("""
+        exclusions {
+            classNamePatterns.add(".*Response$")
+        }
+        """);
+
+    BuildResult check = runCheckAndFail();
+    assertThat(check.getOutput()).contains("JoinMatchCommand has 3 instance fields");
+
+    runReport();
+    String json = reportJson();
+    assertReportContainsExclusion(json, "JoinMatchResponse", "[\".*Response$\"]");
+    assertThat(json).contains("\"classes_over_2_fields\": 1");
+    assertDetailsIncludeExclude(json, "JoinMatchCommand", "JoinMatchResponse");
+  }
+
+  @Test
+  void canCombineSeveralClassNamePatterns() throws IOException {
+    writeSettings();
+    writeJavaSource("Types.java", """
+        class ApiResponse {
+          private int first;
+          private int second;
+          private int third;
+        }
+
+        class GeneratedModel {
+          private int first;
+          private int second;
+          private int third;
+        }
+
+        class ActiveRequest {
+          private int first;
+          private int second;
+          private int third;
+        }
+        """);
+    writeBuildScript("""
+        exclusions {
+            classNamePatterns.add(".*Response$")
+            classNamePatterns.add("Api.*")
+            classNamePatterns.add(".*Model$")
+        }
+        """);
+
+    runReport();
+    String json = reportJson();
+    assertReportContainsExclusion(json, "ApiResponse", "[\".*Response$\", \"Api.*\"]");
+    assertReportContainsExclusion(json, "GeneratedModel", "[\".*Model$\"]");
+    assertDetailsIncludeExclude(json, "ActiveRequest", "ApiResponse", "GeneratedModel");
+  }
+
+  @Test
+  void exclusionsMatchNestedClassesAndRecordsBySimpleName() throws IOException {
+    writeSettings();
+    writeJavaSource("NestedTypes.java", """
+        class Container {
+          static class NestedResponse {
+            private int first;
+            private int second;
+            private int third;
+
+            public int getFirst() {
+              return first;
+            }
+          }
+
+          static class NestedRequest {
+            private int first;
+            private int second;
+            private int third;
+          }
+        }
+
+        record ReceiptResponse(int first, int second, int third) {
+        }
+
+        record ReceiptRequest(int first, int second, int third) {
+        }
+        """);
+    writeBuildScript("""
+        exclusions {
+            classNamePatterns.add(".*Response$")
+        }
+        """);
+
+    runReport();
+    String json = reportJson();
+    assertReportContainsExclusion(json, "NestedResponse", "[\".*Response$\"]");
+    assertReportContainsExclusion(json, "ReceiptResponse", "[\".*Response$\"]");
+    assertThat(json).contains("\"classes_over_2_fields\": 2");
+    assertDetailsIncludeExclude(json, "NestedRequest", "NestedResponse");
+    assertDetailsIncludeExclude(json, "ReceiptRequest", "ReceiptResponse");
+  }
+
+  private static String details(String json) {
+    return json.substring(json.indexOf("\"details\":"));
+  }
+
+  private void writeJavaSource(String fileName, String source) throws IOException {
+    Path sourceDir = projectDir.resolve("src/main/java/");
+    Files.createDirectories(sourceDir);
+    Files.writeString(sourceDir.resolve(fileName), source);
+  }
+
+  private void writeSettings() throws IOException {
+    Files.writeString(projectDir.resolve("settings.gradle.kts"), """
+        rootProject.name = "functional-test"
+        """);
+  }
+
+  private void writeBuildScript() throws IOException {
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+        """);
+  }
+
+  private void writeBuildScript(String objectCalisthenicsBlock) throws IOException {
+    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+        plugins {
+            java
+            id("com.larseckart.object-calisthenics")
+        }
+
+        objectCalisthenics {
+            %s
+        }
+        """.formatted(objectCalisthenicsBlock.stripIndent()));
+  }
+
+  private void initializeGitAndCommit() throws IOException, InterruptedException {
+    git(List.of("init", "-q"));
+    git(List.of("add", "."));
+    git(List.of("-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "initial"));
+  }
+
+  private void git(List<String> arguments) throws IOException, InterruptedException {
+    List<String> command = new ArrayList<>(List.of("git", "-C", projectDir.toString()));
+    command.addAll(arguments);
+    Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
+    String output = new String(process.getInputStream().readAllBytes());
+    assertThat(process.waitFor()).as(output).isZero();
+  }
+
+  private GradleRunner runner(String task) {
+    return GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments(task, "--stacktrace");
+  }
+
+  private BuildResult runCheckAndFail() {
+    return runner("objectCalisthenicsCheck").buildAndFail();
+  }
+
+  private BuildResult runCheck() {
+    return runner("objectCalisthenicsCheck").build();
+  }
+
+  private BuildResult runReport() {
+    return runner("objectCalisthenicsReport").build();
+  }
+
+  private String reportJson() throws IOException {
+    return Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json"));
+  }
+
+  private String runReportTaskWithSourceAndConfig(String fileName, String source, String configBlock)
+      throws IOException {
+    writeSettings();
+    writeJavaSource(fileName, source);
+    writeBuildScript(configBlock);
+    runReport();
+    return reportJson();
+  }
+
+  private void assertCheckOutputContainsHeadlineFailure(BuildResult result) {
+    assertThat(result.getOutput()).contains("Object Calisthenics: 2 violations found");
+    assertThat(result.getOutput()).contains("METRIC violations=");
+    assertThat(result.getOutput()).contains("class-too-long | src/main/java/Bad.java:1 |");
+  }
+
+  private void assertJsonReportContainsClassViolation(String json) {
+    assertThat(json)
+        .contains("class-too-long")
+        .contains("\"subject\": \"Bad\"")
+        .contains("\"advice\"", "Keep each class focused on one responsibility.");
+  }
+
+  private void assertReportContainsExclusion(
+      String json, String className, String matchedPatterns) {
+    assertThat(json).contains("\"class_name\": \"%s\"".formatted(className));
+    assertThat(json).contains("\"matched_patterns\": %s".formatted(matchedPatterns));
+  }
+
+  private void assertDetailsIncludeExclude(String json, String included, String... excluded) {
+    String details = details(json);
+    assertThat(details).contains(included);
+    assertThat(details).doesNotContain(excluded);
+  }
+
+  private void writeBadJavaSource() throws IOException {
+    Path sourceDir = projectDir.resolve("src/main/java/");
+    Files.createDirectories(sourceDir);
+    StringBuilder builder = new StringBuilder();
+    builder.append("public class Bad {\n");
+    for (int i = 0; i < 60; i++) {
+      builder.append("  private int field").append(i).append(" = ").append(i).append(";\n");
+    }
+    // Add enough fields to trigger the field rule but stay at 60 lines so the
+    // class length violation is the headline failure.
+    builder.append("}\n");
+    Files.writeString(sourceDir.resolve("Bad.java"), builder.toString());
+  }
+}

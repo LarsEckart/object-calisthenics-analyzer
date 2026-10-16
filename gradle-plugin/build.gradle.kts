@@ -30,7 +30,7 @@ gradlePlugin {
     plugins {
         create("objectCalisthenics") {
             id = "com.larseckart.object-calisthenics"
-            implementationClass = "com.github.larseckart.objectcalisthenics.gradle.ObjectCalisthenicsPlugin"
+            implementationClass = "com.larseckart.objectcalisthenics.gradle.ObjectCalisthenicsPlugin"
             displayName = "Object Calisthenics Analyzer"
             description = "Configurable Object Calisthenics checks and reports for Java projects"
             tags.set(listOf("java", "object-calisthenics", "static-analysis", "quality"))
