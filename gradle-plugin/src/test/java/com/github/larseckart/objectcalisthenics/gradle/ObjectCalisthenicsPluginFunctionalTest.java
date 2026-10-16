@@ -302,6 +302,27 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
+  void signatureFindingsUseTheExistingCollectionSwitch() throws IOException {
+    String source = """
+        class Search {
+          java.util.List<String> events(java.util.Map<String, String> env) { return null; }
+        }
+        """;
+    String enabled = runReportTaskWithSourceAndConfig("Search.java", source, """
+        rules { forbidNonFirstClassCollections.set(true) }
+        """);
+    assertThat(enabled).contains("\"unwrapped_collections\": 2");
+    assertThat(enabled).contains("\"rule\": \"unwrapped-collection\"");
+    assertThat(enabled).contains("\"subject\": \"Search.events\"");
+
+    String disabled = runReportTaskWithSourceAndConfig("Search.java", source, """
+        rules { forbidNonFirstClassCollections.set(false) }
+        """);
+    assertThat(disabled).contains("\"unwrapped_collections\": 0");
+    assertThat(disabled).doesNotContain("\"rule\": \"unwrapped-collection\"");
+  }
+
+  @Test
   void reportTaskCanExcludeRecordComponentsFromFieldRule() throws IOException {
     String json = runReportTaskWithSourceAndConfig(
         "Configuration.java",

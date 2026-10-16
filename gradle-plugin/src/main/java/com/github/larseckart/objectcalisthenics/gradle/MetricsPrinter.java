@@ -57,6 +57,8 @@ final class MetricsPrinter {
     out.println("METRIC methods_over_nested=" + methodsOverNested);
     out.println("METRIC getter_setter_methods=" + getterSetters);
     out.println("METRIC non_first_class_collections=" + nonFirstClassCollections);
+    out.println("METRIC unwrapped_collections=" + result.violations().stream()
+        .filter(violation -> violation.rule().equals("unwrapped-collection")).count());
     out.println("METRIC traversal_chains=" + traversalChains);
     out.println("METRIC primitive_obsessions=" + primitiveObsessions);
     out.println("METRIC raw_domain_primitives=" + rawDomainPrimitives);

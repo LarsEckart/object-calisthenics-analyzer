@@ -160,6 +160,9 @@ public class ObjectCalisthenicsAnalyzer {
   private void checkType(TypeDeclaration<?> type, Path file, List<Violation> violations) {
     classLengthChecker.check(type, file, violations::add);
     fieldChecker.check(type, file, violations::add);
+    if (rules.forbidNonFirstClassCollections()) {
+      new CollectionSignatureChecker().check(type, file, violations::add);
+    }
     primitiveObsessionChecker.check(type, file, violations::add);
     rawTypePolicyChecker.check(type, file, violations::add);
   }

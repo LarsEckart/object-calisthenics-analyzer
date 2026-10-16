@@ -48,6 +48,9 @@ final class JsonReportWriter {
     sb.append("    \"non_first_class_collections\": ")
         .append(count(violations, "non-first-class-collection"))
         .append(",\n");
+    sb.append("    \"unwrapped_collections\": ")
+        .append(count(violations, "unwrapped-collection"))
+        .append(",\n");
     sb.append("    \"traversal_chains\": ")
         .append(count(violations, "traversal-chain"))
         .append(",\n");

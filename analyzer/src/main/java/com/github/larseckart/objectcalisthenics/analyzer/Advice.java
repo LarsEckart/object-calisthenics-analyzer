@@ -91,6 +91,7 @@ public record Advice(String principle, List<String> options, String caution) {
       Map.entry("getter", ACCESSOR),
       Map.entry("setter", ACCESSOR),
       Map.entry("non-first-class-collection", FIRST_CLASS_COLLECTION),
+      Map.entry("unwrapped-collection", FIRST_CLASS_COLLECTION),
       Map.entry("traversal-chain", TRAVERSAL_CHAIN),
       Map.entry("primitive-obsession", PRIMITIVE_OBSESSION),
       Map.entry("raw-domain-primitive", RAW_DOMAIN_PRIMITIVE));

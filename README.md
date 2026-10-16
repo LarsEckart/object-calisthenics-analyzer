@@ -80,7 +80,7 @@ unchecked.
 | `forbidGetters` | `true` | Forbid getters that expose state. |
 | `forbidSetters` | `true` | Forbid setters. |
 | `strictGetterNames` | `false` | Flag every getter-shaped name, even computed queries. |
-| `forbidNonFirstClassCollections` | `true` | Forbid a collection field plus any other field in the same class. |
+| `forbidNonFirstClassCollections` | `true` | Require collection-only wrappers and flag bare collections, maps, arrays, and varargs in method and constructor signatures. |
 | `forbidTraversalChains` | `true` | Forbid chains through collaborators (`a.b().c()`). |
 | `primitiveObsessionThreshold` | `5` | Minimum evidence score for a repeated primitive/String concept connected through fields or method-argument flow; `-1` disables the heuristic. |
 | `allowedRawTypes` | All primitive, boxed primitive, and `String` types | Raw types permitted in fields, record components, and callable parameters. Set this to a narrower set to opt into strict policy findings for every other raw type. |
@@ -93,6 +93,14 @@ unchecked.
 Suppress a per-type exception with `@SuppressWarnings("calisthenics:fields")`,
 `@SuppressWarnings("calisthenics:primitive-obsession")`, or
 `@SuppressWarnings("calisthenics:raw-domain-primitive")`.
+
+The first-class collections rule reports `unwrapped-collection` for parameters
+and return types at every visibility, including private helpers. Constructors
+of types with exactly one collection field (or record component) are exempt.
+For external API contracts or deliberate boundaries, suppress a method,
+constructor, or type with `@SuppressWarnings("calisthenics:unwrapped-collection")`.
+This is a design smell, not proof that a wrapper would improve the code.
+Type recognition uses simple names, not resolved inheritance.
 
 ## Tasks
 
