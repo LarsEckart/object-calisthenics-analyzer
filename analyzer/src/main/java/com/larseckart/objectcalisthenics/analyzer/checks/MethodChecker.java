@@ -33,7 +33,7 @@ class MethodChecker {
   }
 
   public void check(MethodDeclaration method, Path file, Consumer<Violation> violations) {
-    if (!method.getBody().isPresent() || !isPublic(method)) {
+    if (method.getBody().isEmpty() || !isPublic(method)) {
       return;
     }
 
