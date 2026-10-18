@@ -113,7 +113,11 @@ RuleSet rules = RuleSet.builder()
     .enable(Rule.ONE_TOP_LEVEL_TYPE_PER_FILE)
     .build();
 
-AnalysisResult result = new ObjectCalisthenicsAnalyzer(rules).analyze(sourceRoot);
+CompilationUnitChecks checks =
+    new CompilationUnitChecks(rules, PrimitiveObsessionConfig.defaults(), List.of());
+ObjectCalisthenicsAnalyzer analyzer =
+    new ObjectCalisthenicsAnalyzer(new JavaSourceParser(), checks);
+AnalysisResult result = analyzer.analyze(sourceRoot);
 ```
 
 Use `enable(Rule.FORBID_ELSE)` or `disable(Rule.FORBID_ELSE)` for rule switches.
@@ -125,6 +129,10 @@ The builder copies collection inputs and exposes read-only sets.
 **Java interface change:** the positional `RuleSet` constructors have been
 removed. Replace those calls with named builder settings. The Gradle settings
 and their defaults have not changed.
+
+`ObjectCalisthenicsAnalyzer` now has two constructors: no arguments for defaults,
+or `(JavaSourceParser, CompilationUnitChecks)` for custom setup. Replace the old
+rule-based constructors with the injected form shown above.
 
 ## Tasks
 

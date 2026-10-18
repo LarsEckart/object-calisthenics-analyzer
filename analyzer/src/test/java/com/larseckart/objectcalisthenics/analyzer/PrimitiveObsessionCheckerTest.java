@@ -2,6 +2,8 @@ package com.larseckart.objectcalisthenics.analyzer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.larseckart.objectcalisthenics.analyzer.checks.CompilationUnitChecks;
+import com.larseckart.objectcalisthenics.analyzer.parsing.JavaSourceParser;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -747,10 +749,12 @@ class PrimitiveObsessionCheckerTest {
   private ObjectCalisthenicsAnalyzer analyzer(int threshold) {
     RuleSet rules = RuleSet.builder().safeChainRoots(Set.of("System.out", "System.err")).build();
     return new ObjectCalisthenicsAnalyzer(
-        rules,
-        new PrimitiveObsessionConfig(
-            threshold, PrimitiveObsessionConfig.defaults().allowedRawTypes(), List.of()),
-        List.of());
+        new JavaSourceParser(),
+        new CompilationUnitChecks(
+            rules,
+            new PrimitiveObsessionConfig(
+                threshold, PrimitiveObsessionConfig.defaults().allowedRawTypes(), List.of()),
+            List.of()));
   }
 
   private List<Violation> primitiveFindings(AnalysisResult result) {

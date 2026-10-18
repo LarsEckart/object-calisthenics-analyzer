@@ -2,6 +2,8 @@ package com.larseckart.objectcalisthenics.analyzer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.larseckart.objectcalisthenics.analyzer.checks.CompilationUnitChecks;
+import com.larseckart.objectcalisthenics.analyzer.parsing.JavaSourceParser;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -136,10 +138,23 @@ class CollectionSignatureTest {
   public void honorsExistingRuleSwitchAndClassExclusions() throws IOException {
     Path file = source("class Example { java.util.List<String> values() { return null; } }");
     RuleSet disabled = RuleSet.builder().disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS).build();
-    assertThat(signatureFindings(new ObjectCalisthenicsAnalyzer(disabled), file)).isEmpty();
     assertThat(
             signatureFindings(
-                new ObjectCalisthenicsAnalyzer(RuleSet.defaults(), List.of("Example")), file))
+                new ObjectCalisthenicsAnalyzer(
+                    new JavaSourceParser(),
+                    new CompilationUnitChecks(
+                        disabled, PrimitiveObsessionConfig.defaults(), List.of())),
+                file))
+        .isEmpty();
+    assertThat(
+            signatureFindings(
+                new ObjectCalisthenicsAnalyzer(
+                    new JavaSourceParser(),
+                    new CompilationUnitChecks(
+                        RuleSet.defaults(),
+                        PrimitiveObsessionConfig.defaults(),
+                        List.of("Example"))),
+                file))
         .isEmpty();
   }
 

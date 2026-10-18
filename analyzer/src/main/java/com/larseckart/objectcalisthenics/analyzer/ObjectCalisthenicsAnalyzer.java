@@ -18,22 +18,16 @@ public class ObjectCalisthenicsAnalyzer {
   private final JavaSourceParser parser;
   private final CompilationUnitChecks checks;
 
-  public ObjectCalisthenicsAnalyzer(RuleSet rules, List<String> classNamePatterns) {
-    this(rules, PrimitiveObsessionConfig.defaults(), classNamePatterns);
-  }
-
-  public ObjectCalisthenicsAnalyzer(
-      RuleSet rules, PrimitiveObsessionConfig primitiveObsession, List<String> classNamePatterns) {
-    this.parser = new JavaSourceParser();
-    this.checks = new CompilationUnitChecks(rules, primitiveObsession, classNamePatterns);
-  }
-
-  public ObjectCalisthenicsAnalyzer(RuleSet rules) {
-    this(rules, List.of());
-  }
-
   public ObjectCalisthenicsAnalyzer() {
-    this(RuleSet.defaults());
+    this(
+        new JavaSourceParser(),
+        new CompilationUnitChecks(
+            RuleSet.defaults(), PrimitiveObsessionConfig.defaults(), List.of()));
+  }
+
+  public ObjectCalisthenicsAnalyzer(JavaSourceParser parser, CompilationUnitChecks checks) {
+    this.parser = parser;
+    this.checks = checks;
   }
 
   /** Analyzes all Java files under the given directory. */

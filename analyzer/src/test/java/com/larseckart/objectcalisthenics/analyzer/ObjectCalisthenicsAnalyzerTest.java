@@ -2,6 +2,8 @@ package com.larseckart.objectcalisthenics.analyzer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.larseckart.objectcalisthenics.analyzer.checks.CompilationUnitChecks;
+import com.larseckart.objectcalisthenics.analyzer.parsing.JavaSourceParser;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -88,10 +90,14 @@ class ObjectCalisthenicsAnalyzerTest {
   public void canExcludeRecordComponentsFromFieldRule() {
     ObjectCalisthenicsAnalyzer analyzerWithoutRecordComponents =
         new ObjectCalisthenicsAnalyzer(
-            RuleSet.builder()
-                .disable(Rule.INCLUDE_RECORD_COMPONENTS_IN_FIELD_RULE)
-                .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
-                .build());
+            new JavaSourceParser(),
+            new CompilationUnitChecks(
+                RuleSet.builder()
+                    .disable(Rule.INCLUDE_RECORD_COMPONENTS_IN_FIELD_RULE)
+                    .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
+                    .build(),
+                PrimitiveObsessionConfig.defaults(),
+                List.of()));
 
     AnalysisResult result =
         analyzerWithoutRecordComponents.analyze(
@@ -233,12 +239,16 @@ class ObjectCalisthenicsAnalyzerTest {
                 """);
     ObjectCalisthenicsAnalyzer strictAnalyzer =
         new ObjectCalisthenicsAnalyzer(
-            RuleSet.builder()
-                .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
-                .enable(Rule.STRICT_GETTER_NAMES)
-                .disable(Rule.FORBID_TRAVERSAL_CHAINS)
-                .safeChainRoots(Set.of())
-                .build());
+            new JavaSourceParser(),
+            new CompilationUnitChecks(
+                RuleSet.builder()
+                    .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
+                    .enable(Rule.STRICT_GETTER_NAMES)
+                    .disable(Rule.FORBID_TRAVERSAL_CHAINS)
+                    .safeChainRoots(Set.of())
+                    .build(),
+                PrimitiveObsessionConfig.defaults(),
+                List.of()));
 
     assertThat(strictAnalyzer.analyze(List.of(source)).violations())
         .anyMatch(violation -> violation.rule().equals("getter"));
@@ -268,10 +278,14 @@ class ObjectCalisthenicsAnalyzerTest {
                 """);
     ObjectCalisthenicsAnalyzer chainAnalyzer =
         new ObjectCalisthenicsAnalyzer(
-            RuleSet.builder()
-                .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
-                .fluentChainMethods(Set.of("minus", "times"))
-                .build());
+            new JavaSourceParser(),
+            new CompilationUnitChecks(
+                RuleSet.builder()
+                    .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
+                    .fluentChainMethods(Set.of("minus", "times"))
+                    .build(),
+                PrimitiveObsessionConfig.defaults(),
+                List.of()));
 
     List<Violation> chains =
         chainAnalyzer.analyze(List.of(source)).violations().stream()
@@ -292,8 +306,7 @@ class ObjectCalisthenicsAnalyzerTest {
 
   @Test
   public void detectsNonFirstClassCollectionClass() {
-    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule =
-        new ObjectCalisthenicsAnalyzer(RuleSet.defaults());
+    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer();
 
     AnalysisResult result =
         analyzerWithCollectionRule.analyze(
@@ -306,8 +319,7 @@ class ObjectCalisthenicsAnalyzerTest {
 
   @Test
   public void detectsNonFirstClassArrayClass() {
-    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule =
-        new ObjectCalisthenicsAnalyzer(RuleSet.defaults());
+    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer();
 
     AnalysisResult result =
         analyzerWithCollectionRule.analyze(
@@ -320,8 +332,7 @@ class ObjectCalisthenicsAnalyzerTest {
 
   @Test
   public void cleanFirstClassCollectionAndArrayClassesHaveNoCollectionViolation() {
-    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule =
-        new ObjectCalisthenicsAnalyzer(RuleSet.defaults());
+    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer();
 
     AnalysisResult result =
         analyzerWithCollectionRule.analyze(
@@ -354,11 +365,14 @@ class ObjectCalisthenicsAnalyzerTest {
                 """);
     ObjectCalisthenicsAnalyzer analyzerWithExclusions =
         new ObjectCalisthenicsAnalyzer(
-            RuleSet.builder()
-                .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
-                .safeChainRoots(Set.of())
-                .build(),
-            List.of(".*Response$"));
+            new JavaSourceParser(),
+            new CompilationUnitChecks(
+                RuleSet.builder()
+                    .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
+                    .safeChainRoots(Set.of())
+                    .build(),
+                PrimitiveObsessionConfig.defaults(),
+                List.of(".*Response$")));
 
     AnalysisResult result = analyzerWithExclusions.analyze(List.of(source));
 
@@ -386,10 +400,14 @@ class ObjectCalisthenicsAnalyzerTest {
                 """);
     ObjectCalisthenicsAnalyzer chainAnalyzer =
         new ObjectCalisthenicsAnalyzer(
-            RuleSet.builder()
-                .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
-                .safeChainRoots(Set.of())
-                .build());
+            new JavaSourceParser(),
+            new CompilationUnitChecks(
+                RuleSet.builder()
+                    .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
+                    .safeChainRoots(Set.of())
+                    .build(),
+                PrimitiveObsessionConfig.defaults(),
+                List.of()));
 
     List<Violation> chains =
         chainAnalyzer.analyze(List.of(source)).violations().stream()

@@ -2,6 +2,8 @@ package com.larseckart.objectcalisthenics.analyzer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.larseckart.objectcalisthenics.analyzer.checks.CompilationUnitChecks;
+import com.larseckart.objectcalisthenics.analyzer.parsing.JavaSourceParser;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -91,7 +93,11 @@ class TopLevelTypesTest {
   public void honorsClassExclusionsWithoutChangingThePrimaryType() throws IOException {
     Path file = source("Main.java", "class Main {}\nclass Ignored {}\nclass Helper {}");
     AnalysisResult result =
-        new ObjectCalisthenicsAnalyzer(rules(), List.of("Ignored")).analyze(List.of(file));
+        new ObjectCalisthenicsAnalyzer(
+                new JavaSourceParser(),
+                new CompilationUnitChecks(
+                    rules(), PrimitiveObsessionConfig.defaults(), List.of("Ignored")))
+            .analyze(List.of(file));
     assertThat(result.violations()).extracting(Violation::subject).containsExactly("Helper");
     assertThat(result.excludedClasses())
         .extracting(ExcludedClass::className)
@@ -99,7 +105,9 @@ class TopLevelTypesTest {
   }
 
   private ObjectCalisthenicsAnalyzer analyzer() {
-    return new ObjectCalisthenicsAnalyzer(rules());
+    return new ObjectCalisthenicsAnalyzer(
+        new JavaSourceParser(),
+        new CompilationUnitChecks(rules(), PrimitiveObsessionConfig.defaults(), List.of()));
   }
 
   private RuleSet rules() {

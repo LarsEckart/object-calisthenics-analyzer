@@ -3,6 +3,8 @@ package com.larseckart.objectcalisthenics.gradle.tasks;
 import com.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.larseckart.objectcalisthenics.analyzer.ObjectCalisthenicsAnalyzer;
 import com.larseckart.objectcalisthenics.analyzer.PrimitiveObsessionConfig;
+import com.larseckart.objectcalisthenics.analyzer.checks.CompilationUnitChecks;
+import com.larseckart.objectcalisthenics.analyzer.parsing.JavaSourceParser;
 import com.larseckart.objectcalisthenics.gradle.baseline.Baseline;
 import com.larseckart.objectcalisthenics.gradle.configuration.ObjectCalisthenicsRules;
 import com.larseckart.objectcalisthenics.gradle.configuration.RuleSetFactory;
@@ -48,12 +50,14 @@ public abstract class ObjectCalisthenicsBaselineTask extends DefaultTask {
   public void createBaseline() {
     ObjectCalisthenicsAnalyzer analyzer =
         new ObjectCalisthenicsAnalyzer(
-            RuleSetFactory.from(getRules()),
-            new PrimitiveObsessionConfig(
-                getRules().getPrimitiveObsessionThreshold().get(),
-                getRules().getAllowedRawTypes().get(),
-                getRules().getBoundaryClassNamePatterns().get()),
-            getClassNamePatterns().get());
+            new JavaSourceParser(),
+            new CompilationUnitChecks(
+                RuleSetFactory.from(getRules()),
+                new PrimitiveObsessionConfig(
+                    getRules().getPrimitiveObsessionThreshold().get(),
+                    getRules().getAllowedRawTypes().get(),
+                    getRules().getBoundaryClassNamePatterns().get()),
+                getClassNamePatterns().get()));
     List<Path> files =
         getSourceFiles().getFiles().stream()
             .map(File::toPath)

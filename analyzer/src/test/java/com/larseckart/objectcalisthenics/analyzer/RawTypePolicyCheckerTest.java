@@ -2,6 +2,8 @@ package com.larseckart.objectcalisthenics.analyzer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.larseckart.objectcalisthenics.analyzer.checks.CompilationUnitChecks;
+import com.larseckart.objectcalisthenics.analyzer.parsing.JavaSourceParser;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,7 +64,8 @@ class RawTypePolicyCheckerTest {
   }
 
   private ObjectCalisthenicsAnalyzer analyzer(PrimitiveObsessionConfig config) {
-    return new ObjectCalisthenicsAnalyzer(RuleSet.defaults(), config, List.of());
+    return new ObjectCalisthenicsAnalyzer(
+        new JavaSourceParser(), new CompilationUnitChecks(RuleSet.defaults(), config, List.of()));
   }
 
   private List<Violation> rawTypeFindings(AnalysisResult result) {
