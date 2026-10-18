@@ -1,9 +1,5 @@
 package com.larseckart.objectcalisthenics.analyzer.checks;
 
-import com.larseckart.objectcalisthenics.analyzer.RuleSet;
-import com.larseckart.objectcalisthenics.analyzer.Violation;
-import com.larseckart.objectcalisthenics.analyzer.ViolationContext;
-
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -16,14 +12,14 @@ import com.github.javaparser.ast.stmt.ForStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.TryStmt;
 import com.github.javaparser.ast.stmt.WhileStmt;
-
+import com.larseckart.objectcalisthenics.analyzer.RuleSet;
+import com.larseckart.objectcalisthenics.analyzer.Violation;
+import com.larseckart.objectcalisthenics.analyzer.ViolationContext;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
 
-/**
- * Checks method-level Object Calisthenics rules.
- */
+/** Checks method-level Object Calisthenics rules. */
 class MethodChecker {
 
   private final RuleSet rules;
@@ -49,7 +45,8 @@ class MethodChecker {
 
   private static boolean isPublic(MethodDeclaration method) {
     return method.isPublic()
-        || method.findAncestor(ClassOrInterfaceDeclaration.class)
+        || method
+            .findAncestor(ClassOrInterfaceDeclaration.class)
             .map(ClassOrInterfaceDeclaration::isInterface)
             .orElse(false);
   }
@@ -62,7 +59,8 @@ class MethodChecker {
   }
 
   private static boolean containsElse(MethodDeclaration method) {
-    return method.findAll(IfStmt.class).stream().anyMatch(ifStmt -> ifStmt.getElseStmt().isPresent());
+    return method.findAll(IfStmt.class).stream()
+        .anyMatch(ifStmt -> ifStmt.getElseStmt().isPresent());
   }
 
   private void checkNesting(MethodDeclaration method, Path file, Consumer<Violation> violations) {
@@ -78,12 +76,12 @@ class MethodChecker {
 
     violations.accept(
         new Violation(
-            file,
-            method.getBegin().map(position -> position.line).orElse(0),
-            "method-over-nested",
-            method.getNameAsString(),
-            "Method '%s' nests %d levels deep (limit %d)"
-                .formatted(method.getNameAsString(), depth, rules.maxMethodNesting()))
+                file,
+                method.getBegin().map(position -> position.line).orElse(0),
+                "method-over-nested",
+                method.getNameAsString(),
+                "Method '%s' nests %d levels deep (limit %d)"
+                    .formatted(method.getNameAsString(), depth, rules.maxMethodNesting()))
             .withContext(nestingContext(nesting)));
   }
 
@@ -98,12 +96,14 @@ class MethodChecker {
   }
 
   private static String describeNestedSource(Node deepestNode) {
-    Node source = deepestNode instanceof BlockStmt
-        ? deepestNode.getParentNode().orElse(deepestNode)
-        : deepestNode;
-    String shape = source instanceof ClassOrInterfaceDeclaration || source instanceof RecordDeclaration
-        ? localTypeShape(source)
-        : sourceShape(source);
+    Node source =
+        deepestNode instanceof BlockStmt
+            ? deepestNode.getParentNode().orElse(deepestNode)
+            : deepestNode;
+    String shape =
+        source instanceof ClassOrInterfaceDeclaration || source instanceof RecordDeclaration
+            ? localTypeShape(source)
+            : sourceShape(source);
     int line = source.getBegin().map(position -> position.line).orElse(0);
     return "%s at line %d".formatted(shape, line);
   }
@@ -146,17 +146,17 @@ class MethodChecker {
     }
     violations.accept(
         new Violation(
-            file,
-            method.getBegin().map(position -> position.line).orElse(0),
-            "setter",
-            method.getNameAsString(),
-            "Method '%s' looks like a setter".formatted(method.getNameAsString()))
+                file,
+                method.getBegin().map(position -> position.line).orElse(0),
+                "setter",
+                method.getNameAsString(),
+                "Method '%s' looks like a setter".formatted(method.getNameAsString()))
             .withContext(setterContext(method)));
   }
 
   private static ViolationContext setterContext(MethodDeclaration method) {
-    String parameter = method.getParameter(0).getTypeAsString()
-        + " " + method.getParameter(0).getNameAsString();
+    String parameter =
+        method.getParameter(0).getTypeAsString() + " " + method.getParameter(0).getNameAsString();
     return new ViolationContext(
         "accessor-pattern",
         "The method has a setter-shaped name, void return type, and one parameter.",

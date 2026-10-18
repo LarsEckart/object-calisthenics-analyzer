@@ -5,16 +5,13 @@ import com.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.larseckart.objectcalisthenics.analyzer.ExcludedClass;
 import com.larseckart.objectcalisthenics.analyzer.Violation;
 import com.larseckart.objectcalisthenics.analyzer.ViolationContext;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-/**
- * Writes the analysis result as JSON for the report task.
- */
+/** Writes the analysis result as JSON for the report task. */
 public final class JsonReportWriter {
 
   private JsonReportWriter() {
@@ -36,12 +33,18 @@ public final class JsonReportWriter {
     sb.append("{\n");
     sb.append("  \"violations\": ").append(result.totalViolations()).append(",\n");
     sb.append("  \"metrics\": {\n");
-    sb.append("    \"classes_over_50\": ").append(count(violations, "class-too-long")).append(",\n");
+    sb.append("    \"classes_over_50\": ")
+        .append(count(violations, "class-too-long"))
+        .append(",\n");
     sb.append("    \"classes_over_2_fields\": ")
-        .append(count(violations, "too-many-instance-fields") + count(violations, "too-many-record-components"))
+        .append(
+            count(violations, "too-many-instance-fields")
+                + count(violations, "too-many-record-components"))
         .append(",\n");
     sb.append("    \"methods_with_else\": ").append(count(violations, "else-used")).append(",\n");
-    sb.append("    \"methods_over_nested\": ").append(count(violations, "method-over-nested")).append(",\n");
+    sb.append("    \"methods_over_nested\": ")
+        .append(count(violations, "method-over-nested"))
+        .append(",\n");
     sb.append("    \"getter_setter_methods\": ")
         .append(count(violations, "getter") + count(violations, "setter"))
         .append(",\n");
@@ -119,7 +122,8 @@ public final class JsonReportWriter {
     }
     sb.append("],\n");
     sb.append("        \"suggestion\": \"")
-        .append(jsonEscape(context.suggestion())).append("\",\n");
+        .append(jsonEscape(context.suggestion()))
+        .append("\",\n");
     sb.append("        \"caution\": \"").append(jsonEscape(context.caution())).append("\"\n");
     sb.append("      }\n");
   }
@@ -128,8 +132,12 @@ public final class JsonReportWriter {
     for (int i = 0; i < excludedClasses.size(); i++) {
       ExcludedClass excludedClass = excludedClasses.get(i);
       sb.append("    {\n");
-      sb.append("      \"file\": \"").append(jsonEscape(excludedClass.file().toString())).append("\",\n");
-      sb.append("      \"class_name\": \"").append(jsonEscape(excludedClass.className())).append("\",\n");
+      sb.append("      \"file\": \"")
+          .append(jsonEscape(excludedClass.file().toString()))
+          .append("\",\n");
+      sb.append("      \"class_name\": \"")
+          .append(jsonEscape(excludedClass.className()))
+          .append("\",\n");
       sb.append("      \"matched_patterns\": [");
       for (int j = 0; j < excludedClass.matchedPatterns().size(); j++) {
         if (j > 0) {

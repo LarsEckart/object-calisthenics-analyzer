@@ -1,26 +1,24 @@
 package com.larseckart.objectcalisthenics.analyzer;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class ObjectCalisthenicsAnalyzerTest {
 
   private ObjectCalisthenicsAnalyzer analyzer;
   private Path samplesDir;
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   @BeforeEach
   public void setUp() throws URISyntaxException {
@@ -31,9 +29,8 @@ class ObjectCalisthenicsAnalyzerTest {
   @Test
   public void detectsClassThatIsTooLong() {
     AnalysisResult result = analyzer.analyze(samplesDir.resolve("TooLongClass.java").getParent());
-    List<Violation> classTooLong = result.violations().stream()
-        .filter(v -> v.rule().equals("class-too-long"))
-        .toList();
+    List<Violation> classTooLong =
+        result.violations().stream().filter(v -> v.rule().equals("class-too-long")).toList();
 
     assertThat(classTooLong).hasSize(1);
     assertThat(classTooLong.get(0).subject()).isEqualTo("TooLongClass");
@@ -44,10 +41,11 @@ class ObjectCalisthenicsAnalyzerTest {
   public void givesRuleSpecificAdvice() {
     AnalysisResult result = analyzer.analyze(List.of(samplesDir.resolve("ElseMethod.java")));
 
-    Violation violation = result.violations().stream()
-        .filter(v -> v.rule().equals("else-used"))
-        .findFirst()
-        .orElseThrow();
+    Violation violation =
+        result.violations().stream()
+            .filter(v -> v.rule().equals("else-used"))
+            .findFirst()
+            .orElseThrow();
 
     assertThat(violation.advice().principle()).contains("conditional logic");
     assertThat(violation.advice().options()).anyMatch(option -> option.contains("guard clause"));
@@ -56,26 +54,30 @@ class ObjectCalisthenicsAnalyzerTest {
 
   @Test
   public void detectsTooManyInstanceFields() {
-    AnalysisResult result = analyzer.analyze(samplesDir.resolve("TooManyFieldsClass.java").getParent());
-    List<Violation> fieldViolations = result.violations().stream()
-        .filter(v -> v.rule().equals("too-many-instance-fields"))
-        .toList();
+    AnalysisResult result =
+        analyzer.analyze(samplesDir.resolve("TooManyFieldsClass.java").getParent());
+    List<Violation> fieldViolations =
+        result.violations().stream()
+            .filter(v -> v.rule().equals("too-many-instance-fields"))
+            .toList();
 
     assertThat(fieldViolations).hasSize(1);
     assertThat(fieldViolations.get(0).message()).contains("TooManyFieldsClass");
     assertThat(fieldViolations.get(0).context())
-        .contains(new ViolationContext(
-            "field-list",
-            "The type declares 3 instance fields.",
-            List.of("String first", "String second", "String third"),
-            "Look for a cohesive subset of these values that changes together or supports the same behaviour.",
-            "Only domain knowledge can determine whether any of these fields belong in a separate type."));
+        .contains(
+            new ViolationContext(
+                "field-list",
+                "The type declares 3 instance fields.",
+                List.of("String first", "String second", "String third"),
+                "Look for a cohesive subset of these values that changes together or supports the same behaviour.",
+                "Only domain knowledge can determine whether any of these fields belong in a separate type."));
   }
 
   @Test
   public void detectsTooManyRecordComponentsByDefault() {
-    AnalysisResult result = analyzer.analyze(List.of(
-        samplesDir.resolve("../field-rule/TooManyComponentsRecord.java").normalize()));
+    AnalysisResult result =
+        analyzer.analyze(
+            List.of(samplesDir.resolve("../field-rule/TooManyComponentsRecord.java").normalize()));
 
     assertThat(result.violations())
         .singleElement()
@@ -84,13 +86,18 @@ class ObjectCalisthenicsAnalyzerTest {
 
   @Test
   public void canExcludeRecordComponentsFromFieldRule() {
-    ObjectCalisthenicsAnalyzer analyzerWithoutRecordComponents = new ObjectCalisthenicsAnalyzer(
-        RuleSet.builder().disable(Rule.INCLUDE_RECORD_COMPONENTS_IN_FIELD_RULE)
-            .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS).build());
+    ObjectCalisthenicsAnalyzer analyzerWithoutRecordComponents =
+        new ObjectCalisthenicsAnalyzer(
+            RuleSet.builder()
+                .disable(Rule.INCLUDE_RECORD_COMPONENTS_IN_FIELD_RULE)
+                .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
+                .build());
 
-    AnalysisResult result = analyzerWithoutRecordComponents.analyze(List.of(
-        samplesDir.resolve("../field-rule/TooManyComponentsRecord.java").normalize(),
-        samplesDir.resolve("TooManyFieldsClass.java")));
+    AnalysisResult result =
+        analyzerWithoutRecordComponents.analyze(
+            List.of(
+                samplesDir.resolve("../field-rule/TooManyComponentsRecord.java").normalize(),
+                samplesDir.resolve("TooManyFieldsClass.java")));
 
     assertThat(result.violations())
         .singleElement()
@@ -99,9 +106,11 @@ class ObjectCalisthenicsAnalyzerTest {
 
   @Test
   public void suppressesFieldRulePerType() {
-    AnalysisResult result = analyzer.analyze(List.of(
-        samplesDir.resolve("../field-rule/SuppressedFieldsClass.java").normalize(),
-        samplesDir.resolve("../field-rule/SuppressedComponentsRecord.java").normalize()));
+    AnalysisResult result =
+        analyzer.analyze(
+            List.of(
+                samplesDir.resolve("../field-rule/SuppressedFieldsClass.java").normalize(),
+                samplesDir.resolve("../field-rule/SuppressedComponentsRecord.java").normalize()));
 
     assertThat(result.violations()).isEmpty();
   }
@@ -116,144 +125,179 @@ class ObjectCalisthenicsAnalyzerTest {
 
   @Test
   public void detectsDeeplyNestedMethod() {
-    AnalysisResult result = analyzer.analyze(samplesDir.resolve("DeepNestingMethod.java").getParent());
+    AnalysisResult result =
+        analyzer.analyze(samplesDir.resolve("DeepNestingMethod.java").getParent());
 
-    Violation violation = result.violations().stream()
-        .filter(v -> v.rule().equals("method-over-nested"))
-        .findFirst()
-        .orElseThrow();
+    Violation violation =
+        result.violations().stream()
+            .filter(v -> v.rule().equals("method-over-nested"))
+            .findFirst()
+            .orElseThrow();
 
     assertThat(violation.message()).contains("handle");
     assertThat(violation.context())
-        .contains(new ViolationContext(
-            "nested-block",
-            "The method reaches nesting depth 2 at while (value > 0) at line 7.",
-            List.of("while (value > 0) at line 7"),
-            "Consider extracting this block into a method named for the work it performs.",
-            "Domain judgement is needed to choose a useful boundary and preserve side effects and error handling."));
+        .contains(
+            new ViolationContext(
+                "nested-block",
+                "The method reaches nesting depth 2 at while (value > 0) at line 7.",
+                List.of("while (value > 0) at line 7"),
+                "Consider extracting this block into a method named for the work it performs.",
+                "Domain judgement is needed to choose a useful boundary and preserve side effects and error handling."));
   }
 
   @Test
   public void detectsGettersAndSetters() {
-    AnalysisResult result = analyzer.analyze(samplesDir.resolve("GetterSetterClass.java").getParent());
-    List<Violation> getterSetter = result.violations().stream()
-        .filter(v -> v.rule().equals("getter") || v.rule().equals("setter"))
-        .toList();
+    AnalysisResult result =
+        analyzer.analyze(samplesDir.resolve("GetterSetterClass.java").getParent());
+    List<Violation> getterSetter =
+        result.violations().stream()
+            .filter(v -> v.rule().equals("getter") || v.rule().equals("setter"))
+            .toList();
 
     assertThat(getterSetter).hasSize(2);
-    assertThat(getterSetter.stream()
-        .filter(violation -> violation.rule().equals("getter"))
-        .findFirst()
-        .orElseThrow()
-        .context())
-        .contains(new ViolationContext(
-            "accessor-pattern",
-            "The method directly returns field 'name'.",
-            List.of("return name"),
-            "Consider reviewing callers to see whether an intent-revealing operation could replace this read.",
-            "Domain judgement is needed because read-only access can be appropriate at DTO and display boundaries."));
-    assertThat(getterSetter.stream()
-        .filter(violation -> violation.rule().equals("setter"))
-        .findFirst()
-        .orElseThrow()
-        .context())
-        .contains(new ViolationContext(
-            "accessor-pattern",
-            "The method has a setter-shaped name, void return type, and one parameter.",
-            List.of("String name"),
-            "Consider reviewing callers to identify the operation they expect this state change to perform.",
-            "Domain judgement is needed to name that operation and to recognize framework binding boundaries."));
+    assertThat(
+            getterSetter.stream()
+                .filter(violation -> violation.rule().equals("getter"))
+                .findFirst()
+                .orElseThrow()
+                .context())
+        .contains(
+            new ViolationContext(
+                "accessor-pattern",
+                "The method directly returns field 'name'.",
+                List.of("return name"),
+                "Consider reviewing callers to see whether an intent-revealing operation could replace this read.",
+                "Domain judgement is needed because read-only access can be appropriate at DTO and display boundaries."));
+    assertThat(
+            getterSetter.stream()
+                .filter(violation -> violation.rule().equals("setter"))
+                .findFirst()
+                .orElseThrow()
+                .context())
+        .contains(
+            new ViolationContext(
+                "accessor-pattern",
+                "The method has a setter-shaped name, void return type, and one parameter.",
+                List.of("String name"),
+                "Consider reviewing callers to identify the operation they expect this state change to perform.",
+                "Domain judgement is needed to name that operation and to recognize framework binding boundaries."));
   }
 
   @Test
   public void getterRuleAllowsComputedQueriesWithoutBackingState() throws IOException {
-    Path source = writeSource("Queries.java", """
-        class Queries {
-          private String name;
-          private String URL;
+    Path source =
+        writeSource(
+            "Queries.java",
+            """
+                class Queries {
+                  private String name;
+                  private String URL;
 
-          public boolean isIdle() { return calculateIdle(); }
-          public boolean isZero() { return x() == 0; }
-          public int getTotal() { return subtotal() + tax(); }
-          public String getName() { return name; }
-          public String getAlias() { return (this.name); }
-          public String getURL() { return URL.toLowerCase(); }
-          public String getNested() { log(); return name; }
-        }
+                  public boolean isIdle() { return calculateIdle(); }
+                  public boolean isZero() { return x() == 0; }
+                  public int getTotal() { return subtotal() + tax(); }
+                  public String getName() { return name; }
+                  public String getAlias() { return (this.name); }
+                  public String getURL() { return URL.toLowerCase(); }
+                  public String getNested() { log(); return name; }
+                }
 
-        record Status(boolean active) {
-          public boolean isActive() { return !active; }
-        }
-        """);
+                record Status(boolean active) {
+                  public boolean isActive() { return !active; }
+                }
+                """);
 
-    List<String> getters = analyzer.analyze(List.of(source)).violations().stream()
-        .filter(violation -> violation.rule().equals("getter"))
-        .map(Violation::message)
-        .toList();
+    List<String> getters =
+        analyzer.analyze(List.of(source)).violations().stream()
+            .filter(violation -> violation.rule().equals("getter"))
+            .map(Violation::message)
+            .toList();
 
-    assertThat(getters).containsExactlyInAnyOrder(
-        "Method 'getName' looks like a getter",
-        "Method 'getAlias' looks like a getter",
-        "Method 'getURL' looks like a getter",
-        "Method 'isActive' looks like a getter");
+    assertThat(getters)
+        .containsExactlyInAnyOrder(
+            "Method 'getName' looks like a getter",
+            "Method 'getAlias' looks like a getter",
+            "Method 'getURL' looks like a getter",
+            "Method 'isActive' looks like a getter");
   }
 
   @Test
   public void strictGetterNamesRestoresNameOnlyMatching() throws IOException {
-    Path source = writeSource("ComputedQuery.java", """
-        class ComputedQuery {
-          public boolean isIdle() { return velocity().isZero(); }
-        }
-        """);
-    ObjectCalisthenicsAnalyzer strictAnalyzer = new ObjectCalisthenicsAnalyzer(RuleSet.builder().disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
-        .enable(Rule.STRICT_GETTER_NAMES).disable(Rule.FORBID_TRAVERSAL_CHAINS).safeChainRoots(Set.of()).build());
+    Path source =
+        writeSource(
+            "ComputedQuery.java",
+            """
+                class ComputedQuery {
+                  public boolean isIdle() { return velocity().isZero(); }
+                }
+                """);
+    ObjectCalisthenicsAnalyzer strictAnalyzer =
+        new ObjectCalisthenicsAnalyzer(
+            RuleSet.builder()
+                .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
+                .enable(Rule.STRICT_GETTER_NAMES)
+                .disable(Rule.FORBID_TRAVERSAL_CHAINS)
+                .safeChainRoots(Set.of())
+                .build());
 
     assertThat(strictAnalyzer.analyze(List.of(source)).violations())
         .anyMatch(violation -> violation.rule().equals("getter"));
   }
 
   @Test
-  public void detectsReceiverTraversalButAllowsIndependentAndConfiguredFluentCalls() throws IOException {
-    Path source = writeSource("Chains.java", """
-        class Chains {
-          private Service service;
+  public void detectsReceiverTraversalButAllowsIndependentAndConfiguredFluentCalls()
+      throws IOException {
+    Path source =
+        writeSource(
+            "Chains.java",
+            """
+                class Chains {
+                  private Service service;
 
-          Chains() {
-            customer().address();
-            service.execute();
-            this.service.execute();
-            a.b(c.d());
-            a.b(c.d().e());
-            System.out.println(customer().address());
-            vector.minus(other).times(scale).dot(axis);
-            ball.position().minus(other);
-          }
-        }
-        """);
-    ObjectCalisthenicsAnalyzer chainAnalyzer = new ObjectCalisthenicsAnalyzer(RuleSet.builder().disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
-        .fluentChainMethods(Set.of("minus", "times")).build());
+                  Chains() {
+                    customer().address();
+                    service.execute();
+                    this.service.execute();
+                    a.b(c.d());
+                    a.b(c.d().e());
+                    System.out.println(customer().address());
+                    vector.minus(other).times(scale).dot(axis);
+                    ball.position().minus(other);
+                  }
+                }
+                """);
+    ObjectCalisthenicsAnalyzer chainAnalyzer =
+        new ObjectCalisthenicsAnalyzer(
+            RuleSet.builder()
+                .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
+                .fluentChainMethods(Set.of("minus", "times"))
+                .build());
 
-    List<Violation> chains = chainAnalyzer.analyze(List.of(source)).violations().stream()
-        .filter(violation -> violation.rule().equals("traversal-chain"))
-        .toList();
+    List<Violation> chains =
+        chainAnalyzer.analyze(List.of(source)).violations().stream()
+            .filter(violation -> violation.rule().equals("traversal-chain"))
+            .toList();
 
     assertThat(chains).hasSize(4);
-    assertThat(chains).extracting(Violation::message).containsExactlyInAnyOrder(
-        "Traversal chain has 2 steps: customer().address()",
-        "Traversal chain has 2 steps: c.d().e()",
-        "Traversal chain has 2 steps: customer().address()",
-        "Traversal chain has 2 steps: ball.position().minus(other)");
+    assertThat(chains)
+        .extracting(Violation::message)
+        .containsExactlyInAnyOrder(
+            "Traversal chain has 2 steps: customer().address()",
+            "Traversal chain has 2 steps: c.d().e()",
+            "Traversal chain has 2 steps: customer().address()",
+            "Traversal chain has 2 steps: ball.position().minus(other)");
     assertThat(chains).extracting(Violation::line).contains(5, 9, 10, 12);
     assertThat(chains.get(0).advice().principle()).contains("immediate collaborator");
   }
 
   @Test
   public void detectsNonFirstClassCollectionClass() {
-    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer(
-        RuleSet.defaults());
+    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule =
+        new ObjectCalisthenicsAnalyzer(RuleSet.defaults());
 
-    AnalysisResult result = analyzerWithCollectionRule.analyze(
-        List.of(samplesDir.resolve("NonFirstClassCollectionClass.java")));
+    AnalysisResult result =
+        analyzerWithCollectionRule.analyze(
+            List.of(samplesDir.resolve("NonFirstClassCollectionClass.java")));
 
     assertThat(result.violations())
         .hasSize(1)
@@ -262,11 +306,12 @@ class ObjectCalisthenicsAnalyzerTest {
 
   @Test
   public void detectsNonFirstClassArrayClass() {
-    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer(
-        RuleSet.defaults());
+    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule =
+        new ObjectCalisthenicsAnalyzer(RuleSet.defaults());
 
-    AnalysisResult result = analyzerWithCollectionRule.analyze(
-        List.of(samplesDir.resolve("NonFirstClassArrayClass.java")));
+    AnalysisResult result =
+        analyzerWithCollectionRule.analyze(
+            List.of(samplesDir.resolve("NonFirstClassArrayClass.java")));
 
     assertThat(result.violations())
         .hasSize(1)
@@ -275,12 +320,14 @@ class ObjectCalisthenicsAnalyzerTest {
 
   @Test
   public void cleanFirstClassCollectionAndArrayClassesHaveNoCollectionViolation() {
-    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule = new ObjectCalisthenicsAnalyzer(
-        RuleSet.defaults());
+    ObjectCalisthenicsAnalyzer analyzerWithCollectionRule =
+        new ObjectCalisthenicsAnalyzer(RuleSet.defaults());
 
-    AnalysisResult result = analyzerWithCollectionRule.analyze(List.of(
-        samplesDir.resolve("FirstClassCollectionClass.java"),
-        samplesDir.resolve("FirstClassArrayClass.java")));
+    AnalysisResult result =
+        analyzerWithCollectionRule.analyze(
+            List.of(
+                samplesDir.resolve("FirstClassCollectionClass.java"),
+                samplesDir.resolve("FirstClassArrayClass.java")));
 
     assertThat(result.violations()).isEmpty();
   }
@@ -295,16 +342,23 @@ class ObjectCalisthenicsAnalyzerTest {
 
   @Test
   public void excludedClassesDoNotReceiveTraversalFindings() throws IOException {
-    Path source = writeSource("ExcludedTraversal.java", """
-        class ExcludedResponse {
-          public void handle() {
-            customer().address();
-          }
-        }
-        """);
-    ObjectCalisthenicsAnalyzer analyzerWithExclusions = new ObjectCalisthenicsAnalyzer(
-        RuleSet.builder().disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS).safeChainRoots(Set.of()).build(),
-        List.of(".*Response$"));
+    Path source =
+        writeSource(
+            "ExcludedTraversal.java",
+            """
+                class ExcludedResponse {
+                  public void handle() {
+                    customer().address();
+                  }
+                }
+                """);
+    ObjectCalisthenicsAnalyzer analyzerWithExclusions =
+        new ObjectCalisthenicsAnalyzer(
+            RuleSet.builder()
+                .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
+                .safeChainRoots(Set.of())
+                .build(),
+            List.of(".*Response$"));
 
     AnalysisResult result = analyzerWithExclusions.analyze(List.of(source));
 
@@ -317,21 +371,30 @@ class ObjectCalisthenicsAnalyzerTest {
 
   @Test
   public void traversalFindingsUseEnclosingMethodAsSubject() throws IOException {
-    Path source = writeSource("TwoChains.java", """
-        class TwoChains {
-          public void first() {
-            customer().address();
-          }
-          public void second() {
-            order().customer().name();
-          }
-        }
-        """);
-    ObjectCalisthenicsAnalyzer chainAnalyzer = new ObjectCalisthenicsAnalyzer(RuleSet.builder().disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS).safeChainRoots(Set.of()).build());
+    Path source =
+        writeSource(
+            "TwoChains.java",
+            """
+                class TwoChains {
+                  public void first() {
+                    customer().address();
+                  }
+                  public void second() {
+                    order().customer().name();
+                  }
+                }
+                """);
+    ObjectCalisthenicsAnalyzer chainAnalyzer =
+        new ObjectCalisthenicsAnalyzer(
+            RuleSet.builder()
+                .disable(Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS)
+                .safeChainRoots(Set.of())
+                .build());
 
-    List<Violation> chains = chainAnalyzer.analyze(List.of(source)).violations().stream()
-        .filter(v -> v.rule().equals("traversal-chain"))
-        .toList();
+    List<Violation> chains =
+        chainAnalyzer.analyze(List.of(source)).violations().stream()
+            .filter(v -> v.rule().equals("traversal-chain"))
+            .toList();
 
     assertThat(chains).hasSize(2);
     assertThat(chains).extracting(Violation::subject).containsExactlyInAnyOrder("first", "second");

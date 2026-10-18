@@ -1,10 +1,6 @@
 package com.larseckart.objectcalisthenics.analyzer;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,88 +8,103 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class PrimitiveObsessionCheckerTest {
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   @Test
   public void reportsRepeatedStringConceptWithPrivateBehaviour() throws IOException {
-    Path source = writeSource("Accounts.java", """
-        class Accounts {
-          void register(String email) {
-            validateEmail(email);
-            normalizeEmail(email);
-          }
+    Path source =
+        writeSource(
+            "Accounts.java",
+            """
+                class Accounts {
+                  void register(String email) {
+                    validateEmail(email);
+                    normalizeEmail(email);
+                  }
 
-          private void validateEmail(String email) {
-            if (email.isBlank()) {
-              throw new IllegalArgumentException();
-            }
-          }
+                  private void validateEmail(String email) {
+                    if (email.isBlank()) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
 
-          private String normalizeEmail(String email) {
-            return email.trim().toLowerCase();
-          }
-        }
-        """);
+                  private String normalizeEmail(String email) {
+                    return email.trim().toLowerCase();
+                  }
+                }
+                """);
 
     List<Violation> findings = primitiveFindings(analyzer(5).analyze(List.of(source)));
 
     assertThat(findings)
         .singleElement()
-        .satisfies(finding -> {
-          assertThat(finding.subject()).isEqualTo("email");
-          assertThat(finding.message())
-              .contains("uses String in 3 declarations")
-              .contains("score 9")
-              .contains("private helper(s) validateEmail, normalizeEmail")
-              .contains("validation in validateEmail")
-              .contains("normalization, parsing, or formatting");
-          assertThat(finding.advice().principle()).contains("domain value");
-        });
+        .satisfies(
+            finding -> {
+              assertThat(finding.subject()).isEqualTo("email");
+              assertThat(finding.message())
+                  .contains("uses String in 3 declarations")
+                  .contains("score 9")
+                  .contains("private helper(s) validateEmail, normalizeEmail")
+                  .contains("validation in validateEmail")
+                  .contains("normalization, parsing, or formatting");
+              assertThat(finding.advice().principle()).contains("domain value");
+            });
   }
 
   @Test
   public void fieldsConnectSameNamedParametersWithoutArgumentFlow() throws IOException {
-    Violation finding = singleFinding("Attempts.java", """
-        class Attempts {
-          private int maximum;
+    Violation finding =
+        singleFinding(
+            "Attempts.java",
+            """
+                class Attempts {
+                  private int maximum;
 
-          void configure(int maximum) {
-            if (maximum < 1) {
-              throw new IllegalArgumentException();
-            }
-            this.maximum = maximum;
-          }
-        }
-        """);
+                  void configure(int maximum) {
+                    if (maximum < 1) {
+                      throw new IllegalArgumentException();
+                    }
+                    this.maximum = maximum;
+                  }
+                }
+                """);
 
     assertThat(finding.subject()).isEqualTo("maximum");
   }
 
   @Test
   public void declarationIdentityDoesNotDependOnSourceLines() throws IOException {
-    Violation finding = singleFinding("Limits.java", """
-        class Limits { int maximum; void configure(int maximum) {
-          if (maximum < 1) throw new IllegalArgumentException();
-          this.maximum = maximum;
-        } }
-        """);
+    Violation finding =
+        singleFinding(
+            "Limits.java",
+            """
+                class Limits { int maximum; void configure(int maximum) {
+                  if (maximum < 1) throw new IllegalArgumentException();
+                  this.maximum = maximum;
+                } }
+                """);
 
     assertThat(finding.subject()).isEqualTo("maximum");
   }
 
   @Test
   public void flowingParameterIdentityDoesNotDependOnSourceLines() throws IOException {
-    Path source = writeSource("Accounts.java", """
-        class Accounts { void register(String email) { validate(email); } private void validate(String email) {
-          if (email.isBlank()) throw new IllegalArgumentException();
-        } }
-        """);
+    Path source =
+        writeSource(
+            "Accounts.java",
+            """
+                class Accounts { void register(String email) { validate(email); } private void validate(String email) {
+                  if (email.isBlank()) throw new IllegalArgumentException();
+                } }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source))))
         .singleElement()
@@ -102,16 +113,19 @@ class PrimitiveObsessionCheckerTest {
 
   @Test
   public void recordComponentsParticipateUnlessTheRecordIsAPrimitiveWrapper() throws IOException {
-    Path source = writeSource("Money.java", """
-        record Money(int amount, String currency) {
-          Money withAmount(int amount) {
-            if (amount < 0) {
-              throw new IllegalArgumentException();
-            }
-            return new Money(amount, currency);
-          }
-        }
-        """);
+    Path source =
+        writeSource(
+            "Money.java",
+            """
+                record Money(int amount, String currency) {
+                  Money withAmount(int amount) {
+                    if (amount < 0) {
+                      throw new IllegalArgumentException();
+                    }
+                    return new Money(amount, currency);
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source))))
         .singleElement()
@@ -120,198 +134,225 @@ class PrimitiveObsessionCheckerTest {
 
   @Test
   public void staticFieldsDoNotTurnParametersIntoARepeatedConcept() throws IOException {
-    Path source = writeSource("Limits.java", """
-        class Limits {
-          private static int maximum;
+    Path source =
+        writeSource(
+            "Limits.java",
+            """
+                class Limits {
+                  private static int maximum;
 
-          void configure(int maximum) {
-            if (maximum < 1) {
-              throw new IllegalArgumentException();
-            }
-            Limits.maximum = maximum;
-          }
-        }
-        """);
+                  void configure(int maximum) {
+                    if (maximum < 1) {
+                      throw new IllegalArgumentException();
+                    }
+                    Limits.maximum = maximum;
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void boxedPrimitivesAreConceptCandidates() throws IOException {
-    Violation finding = singleFinding("Retries.java", """
-        class Retries {
-          void configure(Integer retries) {
-            requireRetries(retries);
-          }
+    Violation finding =
+        singleFinding(
+            "Retries.java",
+            """
+                class Retries {
+                  void configure(Integer retries) {
+                    requireRetries(retries);
+                  }
 
-          private void requireRetries(Integer retries) {
-            if (retries < 0) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
-        """);
+                  private void requireRetries(Integer retries) {
+                    if (retries < 0) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
+                """);
 
     assertThat(finding.message()).contains("uses Integer");
   }
 
   @Test
   public void doesNotReportRepeatedTechnicalPrimitiveWithoutBehaviour() throws IOException {
-    Path source = writeSource("Pager.java", """
-        class Pager {
-          void move(int offset) {
-            copy(offset);
-          }
+    Path source =
+        writeSource(
+            "Pager.java",
+            """
+                class Pager {
+                  void move(int offset) {
+                    copy(offset);
+                  }
 
-          private void copy(int offset) {
-            send(offset);
-          }
-        }
-        """);
+                  private void copy(int offset) {
+                    send(offset);
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("unrelatedBehaviourCases")
-  public void doesNotBorrowUnrelatedBehaviour(String description, String source) throws IOException {
+  public void doesNotBorrowUnrelatedBehaviour(String description, String source)
+      throws IOException {
     assertThat(findings("UnrelatedBehaviour.java", source)).isEmpty();
   }
 
   private static Stream<Arguments> unrelatedBehaviourCases() {
     return Stream.of(
-        Arguments.of("same name with a different type", """
-        class Codes {
-          void accept(String code) {
-            copy(code);
-          }
+        Arguments.of(
+            "same name with a different type",
+            """
+                class Codes {
+                  void accept(String code) {
+                    copy(code);
+                  }
 
-          private void copy(String code) {
-            send(code);
-          }
+                  private void copy(String code) {
+                    send(code);
+                  }
 
-          void count(int code) {
-            if (code < 0) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
-        """),
-        Arguments.of("field shadowed by a different parameter type", """
-        class Codes {
-          String code;
+                  void count(int code) {
+                    if (code < 0) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
+                """),
+        Arguments.of(
+            "field shadowed by a different parameter type",
+            """
+                class Codes {
+                  String code;
 
-          void store(String code) {
-            this.code = code;
-          }
+                  void store(String code) {
+                    this.code = code;
+                  }
 
-          void count(int code) {
-            if (code < 0) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
-        """),
-        Arguments.of("call on a collaborator", """
-        class Accounts {
-          void register(String email, Sink sink) {
-            sink.validate(email);
-          }
+                  void count(int code) {
+                    if (code < 0) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
+                """),
+        Arguments.of(
+            "call on a collaborator",
+            """
+                class Accounts {
+                  void register(String email, Sink sink) {
+                    sink.validate(email);
+                  }
 
-          private void validate(String email) {
-            if (email.isBlank()) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
+                  private void validate(String email) {
+                    if (email.isBlank()) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
 
-        interface Sink {
-          void validate(String email);
-        }
-        """),
-        Arguments.of("same-named foreign field argument", """
-        class Accounts {
-          void register(String email, Contact contact) {
-            validate(contact.email);
-          }
+                interface Sink {
+                  void validate(String email);
+                }
+                """),
+        Arguments.of(
+            "same-named foreign field argument",
+            """
+                class Accounts {
+                  void register(String email, Contact contact) {
+                    validate(contact.email);
+                  }
 
-          private void validate(String email) {
-            if (email.isBlank()) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
+                  private void validate(String email) {
+                    if (email.isBlank()) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
 
-        class Contact {
-          String email;
-        }
-        """));
+                class Contact {
+                  String email;
+                }
+                """));
   }
 
   @Test
   public void ambiguousOverloadsDoNotCreateSpeculativeParameterFlow() throws IOException {
-    Path source = writeSource("Accounts.java", """
-        class Accounts {
-          void register(String email) {
-            validate(email, true);
-          }
+    Path source =
+        writeSource(
+            "Accounts.java",
+            """
+                class Accounts {
+                  void register(String email) {
+                    validate(email, true);
+                  }
 
-          private void validate(String email, boolean active) {
-            send(email, active);
-          }
+                  private void validate(String email, boolean active) {
+                    send(email, active);
+                  }
 
-          private void validate(String email, int attempts) {
-            if (email.isBlank()) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
-        """);
+                  private void validate(String email, int attempts) {
+                    if (email.isBlank()) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void doesNotMergeSameNamedParametersWithoutDataFlow() throws IOException {
-    Path source = writeSource("Payments.java", """
-        class Payments {
-          void charge(int amount, String currency) {
-            if (amount < 0) {
-              throw new IllegalArgumentException();
-            }
-          }
+    Path source =
+        writeSource(
+            "Payments.java",
+            """
+                class Payments {
+                  void charge(int amount, String currency) {
+                    if (amount < 0) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
 
-          void refund(int amount, String currency) {
-            if (amount < 0) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
-        """);
+                  void refund(int amount, String currency) {
+                    if (amount < 0) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void travellingEvidenceRequiresThreeRelevantCallables() throws IOException {
-    Path source = writeSource("Payments.java", """
-        class Payments {
-          int amount;
-          String currency;
+    Path source =
+        writeSource(
+            "Payments.java",
+            """
+                class Payments {
+                  int amount;
+                  String currency;
 
-          void charge(int amount, String currency) {
-            if (amount < 0) {
-              throw new IllegalArgumentException();
-            }
-          }
+                  void charge(int amount, String currency) {
+                    if (amount < 0) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
 
-          void refund(int amount, String currency) {
-            if (amount < 0) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
-        """);
+                  void refund(int amount, String currency) {
+                    if (amount < 0) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source))))
         .singleElement()
@@ -320,24 +361,27 @@ class PrimitiveObsessionCheckerTest {
 
   @Test
   public void travellingEvidenceIsAddedAtThreeRelevantCallables() throws IOException {
-    Path source = writeSource("Payments.java", """
-        class Payments {
-          int amount;
-          String currency;
+    Path source =
+        writeSource(
+            "Payments.java",
+            """
+                class Payments {
+                  int amount;
+                  String currency;
 
-          void charge(int amount, String currency) {
-            if (amount < 0) throw new IllegalArgumentException();
-          }
+                  void charge(int amount, String currency) {
+                    if (amount < 0) throw new IllegalArgumentException();
+                  }
 
-          void refund(int amount, String currency) {
-            if (amount < 0) throw new IllegalArgumentException();
-          }
+                  void refund(int amount, String currency) {
+                    if (amount < 0) throw new IllegalArgumentException();
+                  }
 
-          void reserve(int amount, String currency) {
-            if (amount < 0) throw new IllegalArgumentException();
-          }
-        }
-        """);
+                  void reserve(int amount, String currency) {
+                    if (amount < 0) throw new IllegalArgumentException();
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source))))
         .anySatisfy(finding -> assertThat(finding.message()).contains("travels with currency"));
@@ -345,248 +389,286 @@ class PrimitiveObsessionCheckerTest {
 
   @Test
   public void doesNotCombineUnrelatedGenericParameters() throws IOException {
-    Path source = writeSource("Parameters.java", """
-        class Parameters {
-          private int integer(String value) {
-            if (value.isBlank()) {
-              throw new IllegalArgumentException();
-            }
-            return Integer.parseInt(value);
-          }
+    Path source =
+        writeSource(
+            "Parameters.java",
+            """
+                class Parameters {
+                  private int integer(String value) {
+                    if (value.isBlank()) {
+                      throw new IllegalArgumentException();
+                    }
+                    return Integer.parseInt(value);
+                  }
 
-          private String filename(String value) {
-            if (value.contains("/")) {
-              throw new IllegalArgumentException();
-            }
-            return value.trim();
-          }
-        }
-        """);
+                  private String filename(String value) {
+                    if (value.contains("/")) {
+                      throw new IllegalArgumentException();
+                    }
+                    return value.trim();
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void genericValueDoesNotBecomeAConceptWhenHelpersForwardIt() throws IOException {
-    Path source = writeSource("Parameters.java", """
-        class Parameters {
-          private String required(String value) {
-            if (value.isBlank()) {
-              throw new IllegalArgumentException();
-            }
-            return value.trim();
-          }
+    Path source =
+        writeSource(
+            "Parameters.java",
+            """
+                class Parameters {
+                  private String required(String value) {
+                    if (value.isBlank()) {
+                      throw new IllegalArgumentException();
+                    }
+                    return value.trim();
+                  }
 
-          private String email(String value) {
-            return required(value).toLowerCase();
-          }
-        }
-        """);
+                  private String email(String value) {
+                    return required(value).toLowerCase();
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void primitiveArraysAreLeftToCollectionAndParsingRules() throws IOException {
-    Path source = writeSource("Images.java", """
-        class Images {
-          void validate(byte[] image) {
-            if (image.length == 0) {
-              throw new IllegalArgumentException();
-            }
-            store(image);
-          }
+    Path source =
+        writeSource(
+            "Images.java",
+            """
+                class Images {
+                  void validate(byte[] image) {
+                    if (image.length == 0) {
+                      throw new IllegalArgumentException();
+                    }
+                    store(image);
+                  }
 
-          private void store(byte[] image) {
-            if (image == null) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
-        """);
+                  private void store(byte[] image) {
+                    if (image == null) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void enumStorageValuesAreAlreadyEncapsulatedByTheEnum() throws IOException {
-    Path source = writeSource("DeliveryMethod.java", """
-        enum DeliveryMethod {
-          EMAIL("email"), SMS("sms");
+    Path source =
+        writeSource(
+            "DeliveryMethod.java",
+            """
+                enum DeliveryMethod {
+                  EMAIL("email"), SMS("sms");
 
-          private final String persistedValue;
+                  private final String persistedValue;
 
-          DeliveryMethod(String persistedValue) {
-            this.persistedValue = persistedValue;
-          }
+                  DeliveryMethod(String persistedValue) {
+                    this.persistedValue = persistedValue;
+                  }
 
-          static DeliveryMethod fromPersistedValue(String persistedValue) {
-            for (DeliveryMethod method : values()) {
-              if (method.persistedValue.equals(persistedValue)) {
-                return method;
-              }
-            }
-            throw new IllegalArgumentException();
-          }
-        }
-        """);
+                  static DeliveryMethod fromPersistedValue(String persistedValue) {
+                    for (DeliveryMethod method : values()) {
+                      if (method.persistedValue.equals(persistedValue)) {
+                        return method;
+                      }
+                    }
+                    throw new IllegalArgumentException();
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void offsetsAndLengthsTravellingWithArraysAreParsingCoordinates() throws IOException {
-    Path source = writeSource("PacketReader.java", """
-        class PacketReader {
-          void read(byte[] bytes, int offset, int length) {
-            requireAvailable(bytes, offset, length);
-          }
+    Path source =
+        writeSource(
+            "PacketReader.java",
+            """
+                class PacketReader {
+                  void read(byte[] bytes, int offset, int length) {
+                    requireAvailable(bytes, offset, length);
+                  }
 
-          private void requireAvailable(byte[] bytes, int offset, int length) {
-            if (offset < 0 || length > bytes.length - offset) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
-        """);
+                  private void requireAvailable(byte[] bytes, int offset, int length) {
+                    if (offset < 0 || length > bytes.length - offset) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void domainOffsetIsNotIgnoredWithoutAnArrayOrBuffer() throws IOException {
-    Violation finding = singleFinding("BillingSchedule.java", """
-        class BillingSchedule {
-          void schedule(int offset) {
-            requireOffset(offset);
-          }
+    Violation finding =
+        singleFinding(
+            "BillingSchedule.java",
+            """
+                class BillingSchedule {
+                  void schedule(int offset) {
+                    requireOffset(offset);
+                  }
 
-          private void requireOffset(int offset) {
-            if (offset < 1) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
-        """);
+                  private void requireOffset(int offset) {
+                    if (offset < 1) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
+                """);
 
     assertThat(finding.subject()).isEqualTo("offset");
   }
 
   @Test
   public void doesNotTreatStringConcatenationAsArithmetic() throws IOException {
-    Path source = writeSource("Errors.java", """
-        class Errors {
-          void missing(String name) {
-            fail("Missing " + name);
-            invalid(name);
-          }
+    Path source =
+        writeSource(
+            "Errors.java",
+            """
+                class Errors {
+                  void missing(String name) {
+                    fail("Missing " + name);
+                    invalid(name);
+                  }
 
-          private void invalid(String name) {
-            fail("Invalid " + name);
-          }
-        }
-        """);
+                  private void invalid(String name) {
+                    fail("Invalid " + name);
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void doesNotTreatFormattingANumericPrimitiveAsArithmetic() throws IOException {
-    Path source = writeSource("Messages.java", """
-        class Messages {
-          String show(int amount) {
-            return message(amount);
-          }
+    Path source =
+        writeSource(
+            "Messages.java",
+            """
+                class Messages {
+                  String show(int amount) {
+                    return message(amount);
+                  }
 
-          private String message(int amount) {
-            return "Amount: " + amount;
-          }
-        }
-        """);
+                  private String message(int amount) {
+                    return "Amount: " + amount;
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void doesNotTreatOrdinaryBooleanBranchesAsMissingBehaviour() throws IOException {
-    Path source = writeSource("Cookies.java", """
-        class Cookies {
-          void set(boolean secure) {
-            if (secure) {
-              addSecureAttribute();
-            }
-            clear(secure);
-          }
+    Path source =
+        writeSource(
+            "Cookies.java",
+            """
+                class Cookies {
+                  void set(boolean secure) {
+                    if (secure) {
+                      addSecureAttribute();
+                    }
+                    clear(secure);
+                  }
 
-          private void clear(boolean secure) {
-            if (secure) {
-              addSecureAttribute();
-            }
-          }
-        }
-        """);
+                  private void clear(boolean secure) {
+                    if (secure) {
+                      addSecureAttribute();
+                    }
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void doesNotTreatResultSelectionAsARejectingGuard() throws IOException {
-    Path source = writeSource("Protocols.java", """
-        class Protocols {
-          String select(boolean secure) {
-            return scheme(secure);
-          }
+    Path source =
+        writeSource(
+            "Protocols.java",
+            """
+                class Protocols {
+                  String select(boolean secure) {
+                    return scheme(secure);
+                  }
 
-          private String scheme(boolean secure) {
-            if (secure) {
-              return "https";
-            }
-            return "http";
-          }
-        }
-        """);
+                  private String scheme(boolean secure) {
+                    if (secure) {
+                      return "https";
+                    }
+                    return "http";
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void assertionsAndRejectingGuardsCountAsConditionalBehaviour() throws IOException {
-    Path source = writeSource("Page.java", """
-        class Page {
-          void show(int number) {
-            assert number > 0;
-            render(number);
-          }
+    Path source =
+        writeSource(
+            "Page.java",
+            """
+                class Page {
+                  void show(int number) {
+                    assert number > 0;
+                    render(number);
+                  }
 
-          private void render(int number) {
-            if (number > 100) {
-              return;
-            }
-            print(number);
-          }
-        }
-        """);
+                  private void render(int number) {
+                    if (number > 100) {
+                      return;
+                    }
+                    print(number);
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source))))
         .singleElement()
-        .satisfies(finding -> assertThat(finding.message())
-            .contains("conditional use in show, render")
-            .contains("repeated across methods"));
+        .satisfies(
+            finding ->
+                assertThat(finding.message())
+                    .contains("conditional use in show, render")
+                    .contains("repeated across methods"));
   }
 
   @Test
   public void numericArithmeticCountsAsBehaviour() throws IOException {
-    Path source = writeSource("Pricing.java", """
-        class Pricing {
-          int total(int amount) {
-            return doubled(amount);
-          }
+    Path source =
+        writeSource(
+            "Pricing.java",
+            """
+                class Pricing {
+                  int total(int amount) {
+                    return doubled(amount);
+                  }
 
-          private int doubled(int amount) {
-            return amount * 2;
-          }
-        }
-        """);
+                  private int doubled(int amount) {
+                    return amount * 2;
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source))))
         .singleElement()
@@ -595,39 +677,45 @@ class PrimitiveObsessionCheckerTest {
 
   @Test
   public void doesNotReportPrimitiveInputBehaviourInsideItsWrapper() throws IOException {
-    Path source = writeSource("EmailAddress.java", """
-        record EmailAddress(String value) {
-          static EmailAddress parse(String text) {
-            return new EmailAddress(requireText(text));
-          }
+    Path source =
+        writeSource(
+            "EmailAddress.java",
+            """
+                record EmailAddress(String value) {
+                  static EmailAddress parse(String text) {
+                    return new EmailAddress(requireText(text));
+                  }
 
-          private static String requireText(String text) {
-            if (text.isBlank()) {
-              throw new IllegalArgumentException();
-            }
-            return text.trim().toLowerCase();
-          }
-        }
-        """);
+                  private static String requireText(String text) {
+                    if (text.isBlank()) {
+                      throw new IllegalArgumentException();
+                    }
+                    return text.trim().toLowerCase();
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
 
   @Test
   public void thresholdCanDisableOrRequireStrongerEvidence() throws IOException {
-    Path source = writeSource("Accounts.java", """
-        class Accounts {
-          void register(String email) {
-            validateEmail(email);
-          }
+    Path source =
+        writeSource(
+            "Accounts.java",
+            """
+                class Accounts {
+                  void register(String email) {
+                    validateEmail(email);
+                  }
 
-          private void validateEmail(String email) {
-            if (email.isBlank()) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
-        """);
+                  private void validateEmail(String email) {
+                    if (email.isBlank()) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(8).analyze(List.of(source)))).isEmpty();
     assertThat(primitiveFindings(analyzer(-1).analyze(List.of(source)))).isEmpty();
@@ -635,20 +723,23 @@ class PrimitiveObsessionCheckerTest {
 
   @Test
   public void canSuppressTheHeuristicPerType() throws IOException {
-    Path source = writeSource("Accounts.java", """
-        @SuppressWarnings("calisthenics:primitive-obsession")
-        class Accounts {
-          void register(String email) {
-            validateEmail(email);
-          }
+    Path source =
+        writeSource(
+            "Accounts.java",
+            """
+                @SuppressWarnings("calisthenics:primitive-obsession")
+                class Accounts {
+                  void register(String email) {
+                    validateEmail(email);
+                  }
 
-          private void validateEmail(String email) {
-            if (email.isBlank()) {
-              throw new IllegalArgumentException();
-            }
-          }
-        }
-        """);
+                  private void validateEmail(String email) {
+                    if (email.isBlank()) {
+                      throw new IllegalArgumentException();
+                    }
+                  }
+                }
+                """);
 
     assertThat(primitiveFindings(analyzer(5).analyze(List.of(source)))).isEmpty();
   }
@@ -656,7 +747,10 @@ class PrimitiveObsessionCheckerTest {
   private ObjectCalisthenicsAnalyzer analyzer(int threshold) {
     RuleSet rules = RuleSet.builder().safeChainRoots(Set.of("System.out", "System.err")).build();
     return new ObjectCalisthenicsAnalyzer(
-        rules, new PrimitiveObsessionConfig(threshold), List.of());
+        rules,
+        new PrimitiveObsessionConfig(
+            threshold, PrimitiveObsessionConfig.defaults().allowedRawTypes(), List.of()),
+        List.of());
   }
 
   private List<Violation> primitiveFindings(AnalysisResult result) {

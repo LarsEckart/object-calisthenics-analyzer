@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * The outcome of an analysis run.
- */
+/** The outcome of an analysis run. */
 public record AnalysisResult(List<Violation> violations, List<ExcludedClass> excludedClasses) {
 
   public AnalysisResult {

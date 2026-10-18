@@ -5,8 +5,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Immutable settings for the analyzer's rules.
- * Use {@link #defaults()} or override named settings through {@link #builder()}.
+ * Immutable settings for the analyzer's rules. Use {@link #defaults()} or override named settings
+ * through {@link #builder()}.
  */
 public final class RuleSet {
 
@@ -98,22 +98,40 @@ public final class RuleSet {
     if (!(other instanceof RuleSet that)) {
       return false;
     }
-    return maxClassLines == that.maxClassLines && maxFieldsPerClass == that.maxFieldsPerClass
-        && maxMethodNesting == that.maxMethodNesting && enabledRules.equals(that.enabledRules)
-        && fluentChainMethods.equals(that.fluentChainMethods) && safeChainRoots.equals(that.safeChainRoots);
+    return maxClassLines == that.maxClassLines
+        && maxFieldsPerClass == that.maxFieldsPerClass
+        && maxMethodNesting == that.maxMethodNesting
+        && enabledRules.equals(that.enabledRules)
+        && fluentChainMethods.equals(that.fluentChainMethods)
+        && safeChainRoots.equals(that.safeChainRoots);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(maxClassLines, maxFieldsPerClass, maxMethodNesting,
-        enabledRules, fluentChainMethods, safeChainRoots);
+    return Objects.hash(
+        maxClassLines,
+        maxFieldsPerClass,
+        maxMethodNesting,
+        enabledRules,
+        fluentChainMethods,
+        safeChainRoots);
   }
 
   @Override
   public String toString() {
-    return "RuleSet[maxClassLines=" + maxClassLines + ", maxFieldsPerClass=" + maxFieldsPerClass
-        + ", maxMethodNesting=" + maxMethodNesting + ", enabledRules=" + enabledRules
-        + ", fluentChainMethods=" + fluentChainMethods + ", safeChainRoots=" + safeChainRoots + "]";
+    return "RuleSet[maxClassLines="
+        + maxClassLines
+        + ", maxFieldsPerClass="
+        + maxFieldsPerClass
+        + ", maxMethodNesting="
+        + maxMethodNesting
+        + ", enabledRules="
+        + enabledRules
+        + ", fluentChainMethods="
+        + fluentChainMethods
+        + ", safeChainRoots="
+        + safeChainRoots
+        + "]";
   }
 
   /** Collects named overrides; each build creates an independent immutable value. */
@@ -122,13 +140,17 @@ public final class RuleSet {
     private int maxClassLines = 50;
     private int maxFieldsPerClass = 2;
     private int maxMethodNesting = 1;
-    private final EnumSet<Rule> enabledRules = EnumSet.of(
-        Rule.INCLUDE_RECORD_COMPONENTS_IN_FIELD_RULE, Rule.FORBID_ELSE,
-        Rule.FORBID_GETTERS, Rule.FORBID_SETTERS, Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS,
-        Rule.FORBID_TRAVERSAL_CHAINS);
+    private final EnumSet<Rule> enabledRules =
+        EnumSet.of(
+            Rule.INCLUDE_RECORD_COMPONENTS_IN_FIELD_RULE,
+            Rule.FORBID_ELSE,
+            Rule.FORBID_GETTERS,
+            Rule.FORBID_SETTERS,
+            Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS,
+            Rule.FORBID_TRAVERSAL_CHAINS);
     private Set<String> fluentChainMethods = Set.of();
-    private Set<String> safeChainRoots = Set.of(
-        "System.out", "System.err", "java.lang.System.out", "java.lang.System.err");
+    private Set<String> safeChainRoots =
+        Set.of("System.out", "System.err", "java.lang.System.out", "java.lang.System.err");
 
     private Builder() {}
 

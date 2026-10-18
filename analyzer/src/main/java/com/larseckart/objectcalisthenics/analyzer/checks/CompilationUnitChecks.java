@@ -8,7 +8,6 @@ import com.larseckart.objectcalisthenics.analyzer.ExcludedClass;
 import com.larseckart.objectcalisthenics.analyzer.PrimitiveObsessionConfig;
 import com.larseckart.objectcalisthenics.analyzer.RuleSet;
 import com.larseckart.objectcalisthenics.analyzer.Violation;
-
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
@@ -27,18 +26,15 @@ public final class CompilationUnitChecks {
   private final PrimitiveObsessionChecker primitiveObsessionChecker;
   private final RawTypePolicyChecker rawTypePolicyChecker;
 
-  private record ClassNamePattern(String source, Pattern pattern) {
-  }
+  private record ClassNamePattern(String source, Pattern pattern) {}
 
   public CompilationUnitChecks(
-      RuleSet rules,
-      PrimitiveObsessionConfig primitiveObsession,
-      List<String> classNamePatterns
-  ) {
+      RuleSet rules, PrimitiveObsessionConfig primitiveObsession, List<String> classNamePatterns) {
     this.rules = rules;
-    this.classNamePatterns = classNamePatterns.stream()
-        .map(pattern -> new ClassNamePattern(pattern, Pattern.compile(pattern)))
-        .toList();
+    this.classNamePatterns =
+        classNamePatterns.stream()
+            .map(pattern -> new ClassNamePattern(pattern, Pattern.compile(pattern)))
+            .toList();
     this.classLengthChecker = new ClassLengthChecker(rules.maxClassLines());
     this.fieldChecker = new FieldChecker(rules);
     this.methodChecker = new MethodChecker(rules);
@@ -48,13 +44,12 @@ public final class CompilationUnitChecks {
   }
 
   public void check(
-      CompilationUnit unit,
-      List<Violation> violations,
-      List<ExcludedClass> excludedClasses
-  ) {
-    Path file = unit.getStorage()
-        .map(CompilationUnit.Storage::getPath)
-        .orElseThrow(() -> new IllegalStateException("Parsed compilation unit has no file path"));
+      CompilationUnit unit, List<Violation> violations, List<ExcludedClass> excludedClasses) {
+    Path file =
+        unit.getStorage()
+            .map(CompilationUnit.Storage::getPath)
+            .orElseThrow(
+                () -> new IllegalStateException("Parsed compilation unit has no file path"));
 
     if (rules.oneTopLevelTypePerFile()) {
       checkTopLevelTypes(unit, file, violations);
@@ -65,9 +60,10 @@ public final class CompilationUnitChecks {
     }
 
     if (rules.forbidTraversalChains()) {
-      Set<String> excludedClassNames = excludedClasses.stream()
-          .map(ExcludedClass::className)
-          .collect(HashSet::new, HashSet::add, HashSet::addAll);
+      Set<String> excludedClassNames =
+          excludedClasses.stream()
+              .map(ExcludedClass::className)
+              .collect(HashSet::new, HashSet::add, HashSet::addAll);
       traversalChainChecker.check(unit, file, excludedClassNames, violations::add);
     }
   }
@@ -78,17 +74,21 @@ public final class CompilationUnitChecks {
     }
     // Keep the type named by the file, or the first type when none matches.
     String fileName = file.getFileName().toString();
-    TypeDeclaration<?> primary = unit.getTypes().stream()
-        .filter(type -> fileName.equals(type.getNameAsString() + ".java"))
-        .findFirst()
-        .orElse(unit.getType(0));
+    TypeDeclaration<?> primary =
+        unit.getTypes().stream()
+            .filter(type -> fileName.equals(type.getNameAsString() + ".java"))
+            .findFirst()
+            .orElse(unit.getType(0));
     for (TypeDeclaration<?> type : unit.getTypes()) {
       if (type != primary && matchingPatterns(type.getNameAsString()).isEmpty()) {
-        violations.add(new Violation(
-            file, type.getBegin().map(position -> position.line).orElse(1),
-            "multiple-top-level-types", type.getNameAsString(),
-            "%s must live in its own source file (one top-level type per file)"
-                .formatted(type.getNameAsString())));
+        violations.add(
+            new Violation(
+                file,
+                type.getBegin().map(position -> position.line).orElse(1),
+                "multiple-top-level-types",
+                type.getNameAsString(),
+                "%s must live in its own source file (one top-level type per file)"
+                    .formatted(type.getNameAsString())));
       }
     }
   }
@@ -97,8 +97,7 @@ public final class CompilationUnitChecks {
       TypeDeclaration<?> type,
       Path file,
       List<Violation> violations,
-      List<ExcludedClass> excludedClasses
-  ) {
+      List<ExcludedClass> excludedClasses) {
     List<String> matchedPatterns = matchingPatterns(type.getNameAsString());
     if (matchedPatterns.isEmpty()) {
       checkType(type, file, violations);

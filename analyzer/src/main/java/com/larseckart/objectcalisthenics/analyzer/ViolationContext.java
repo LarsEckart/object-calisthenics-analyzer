@@ -12,12 +12,7 @@ import java.util.List;
  * @param caution why the suggestion may not fit the surrounding design
  */
 public record ViolationContext(
-    String kind,
-    String summary,
-    List<String> relatedCode,
-    String suggestion,
-    String caution
-) {
+    String kind, String summary, List<String> relatedCode, String suggestion, String caution) {
 
   public ViolationContext {
     relatedCode = List.copyOf(relatedCode);

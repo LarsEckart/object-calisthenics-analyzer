@@ -1,14 +1,17 @@
 package com.larseckart.objectcalisthenics.gradle.tasks;
 
-import com.larseckart.objectcalisthenics.gradle.baseline.Baseline;
-import com.larseckart.objectcalisthenics.gradle.configuration.ObjectCalisthenicsRules;
-import com.larseckart.objectcalisthenics.gradle.configuration.RuleSetFactory;
-import com.larseckart.objectcalisthenics.gradle.reporting.MetricsPrinter;
-
 import com.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.larseckart.objectcalisthenics.analyzer.ObjectCalisthenicsAnalyzer;
 import com.larseckart.objectcalisthenics.analyzer.PrimitiveObsessionConfig;
 import com.larseckart.objectcalisthenics.analyzer.RuleSet;
+import com.larseckart.objectcalisthenics.gradle.baseline.Baseline;
+import com.larseckart.objectcalisthenics.gradle.configuration.ObjectCalisthenicsRules;
+import com.larseckart.objectcalisthenics.gradle.configuration.RuleSetFactory;
+import com.larseckart.objectcalisthenics.gradle.reporting.MetricsPrinter;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -26,14 +29,7 @@ import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-
-/**
- * Gradle task that analyses Java source and fails the build on violations.
- */
+/** Gradle task that analyses Java source and fails the build on violations. */
 @CacheableTask
 public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
 
@@ -74,46 +70,41 @@ public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
   @TaskAction
   public void check() {
     RuleSet ruleSet = RuleSetFactory.from(getRules());
-    ObjectCalisthenicsAnalyzer analyzer = new ObjectCalisthenicsAnalyzer(
-        ruleSet,
-        new PrimitiveObsessionConfig(
-            getRules().getPrimitiveObsessionThreshold().get(),
-            getRules().getAllowedRawTypes().get(),
-            getRules().getBoundaryClassNamePatterns().get()),
-        getClassNamePatterns().get()
-    );
+    ObjectCalisthenicsAnalyzer analyzer =
+        new ObjectCalisthenicsAnalyzer(
+            ruleSet,
+            new PrimitiveObsessionConfig(
+                getRules().getPrimitiveObsessionThreshold().get(),
+                getRules().getAllowedRawTypes().get(),
+                getRules().getBoundaryClassNamePatterns().get()),
+            getClassNamePatterns().get());
 
-    List<Path> files = getSourceFiles().getFiles().stream()
-        .map(File::toPath)
-        .filter(p -> p.toString().endsWith(".java"))
-        .toList();
+    List<Path> files =
+        getSourceFiles().getFiles().stream()
+            .map(File::toPath)
+            .filter(p -> p.toString().endsWith(".java"))
+            .toList();
 
     AnalysisResult result = analyzer.analyze(files);
 
     if (getConsoleSummary().get()) {
-      MetricsPrinter.print(
-          result,
-          getProjectDirectory().get().getAsFile().toPath(),
-          System.out
-      );
+      MetricsPrinter.print(result, getProjectDirectory().get().getAsFile().toPath(), System.out);
     }
 
     Path baselineFile = getBaselineFile().get().getAsFile().toPath();
     boolean hasBaseline = Files.exists(baselineFile);
-    Baseline baseline = Baseline.load(
-        baselineFile,
-        getProjectDirectory().get().getAsFile().toPath()
-    );
+    Baseline baseline =
+        Baseline.load(baselineFile, getProjectDirectory().get().getAsFile().toPath());
     List<Baseline.Entry> current = baseline.entriesFor(result.violations());
     List<Baseline.Entry> newViolations = baseline.newEntries(current);
     List<Baseline.Entry> staleEntries = baseline.staleEntries(current);
 
     if (getWarnAboutStaleBaselineEntries().get() && !staleEntries.isEmpty()) {
-      getLogger().warn(
-          "Object Calisthenics baseline has {} stale entr{}; regenerate it with objectCalisthenicsBaseline.",
-          staleEntries.size(),
-          staleEntries.size() == 1 ? "y" : "ies"
-      );
+      getLogger()
+          .warn(
+              "Object Calisthenics baseline has {} stale entr{}; regenerate it with objectCalisthenicsBaseline.",
+              staleEntries.size(),
+              staleEntries.size() == 1 ? "y" : "ies");
     }
 
     reportViolations(current.size(), newViolations.size(), hasBaseline);
@@ -125,20 +116,26 @@ public abstract class ObjectCalisthenicsCheckTask extends DefaultTask {
     }
 
     if (!getIgnoreFailures().get()) {
-      throw new GradleException(hasBaseline
-          ? "Object Calisthenics violations found: " + newCount + " new, " + (total - newCount) + " baselined"
-          : "Object Calisthenics: " + total + " violations found");
+      throw new GradleException(
+          hasBaseline
+              ? "Object Calisthenics violations found: "
+                  + newCount
+                  + " new, "
+                  + (total - newCount)
+                  + " baselined"
+              : "Object Calisthenics: " + total + " violations found");
     }
 
     if (!hasBaseline) {
-      getLogger().warn(
-          "Object Calisthenics: {} violations found; ignoring failures as configured.", total);
+      getLogger()
+          .warn(
+              "Object Calisthenics: {} violations found; ignoring failures as configured.", total);
       return;
     }
 
-    getLogger().warn(
-        "Object Calisthenics violations found: {} new violation(s); ignoring failures as configured.",
-        newCount
-    );
+    getLogger()
+        .warn(
+            "Object Calisthenics violations found: {} new violation(s); ignoring failures as configured.",
+            newCount);
   }
 }

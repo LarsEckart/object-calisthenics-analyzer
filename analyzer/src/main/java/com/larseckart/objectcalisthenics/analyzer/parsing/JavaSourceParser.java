@@ -4,7 +4,6 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.utils.SourceRoot;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -14,17 +13,19 @@ import java.util.function.Consumer;
 /** Reads Java files and passes their syntax trees to the next analysis step. */
 public final class JavaSourceParser {
 
-  private final ParserConfiguration configuration = new ParserConfiguration()
-      .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_26);
+  private final ParserConfiguration configuration =
+      new ParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_26);
 
   /** Parses a source tree, skipping files that JavaParser cannot parse successfully. */
   public void parse(Path sourceRoot, Consumer<CompilationUnit> compilationUnits) {
     SourceRoot root = new SourceRoot(sourceRoot, configuration);
-    root.tryToParseParallelized().forEach(result -> {
-      if (result.isSuccessful() && result.getResult().isPresent()) {
-        compilationUnits.accept(result.getResult().get());
-      }
-    });
+    root.tryToParseParallelized()
+        .forEach(
+            result -> {
+              if (result.isSuccessful() && result.getResult().isPresent()) {
+                compilationUnits.accept(result.getResult().get());
+              }
+            });
   }
 
   /** Parses selected files, including any partial syntax trees JavaParser returns. */

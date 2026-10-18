@@ -1,7 +1,5 @@
 package com.larseckart.objectcalisthenics.analyzer.checks;
 
-import com.larseckart.objectcalisthenics.analyzer.Violation;
-
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.CallableDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
@@ -33,7 +31,7 @@ import com.github.javaparser.ast.stmt.ThrowStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
-
+import com.larseckart.objectcalisthenics.analyzer.Violation;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,42 +49,62 @@ import java.util.function.Consumer;
 /**
  * Finds repeated primitive concepts that have accumulated domain behaviour.
  *
- * <p>This is deliberately a heuristic rather than a ban on primitives. A
- * concept must flow between declarations and participate in validation,
- * normalization, literal comparison, or numeric arithmetic before it can be reported.</p>
+ * <p>This is deliberately a heuristic rather than a ban on primitives. A concept must flow between
+ * declarations and participate in validation, normalization, literal comparison, or numeric
+ * arithmetic before it can be reported.
  */
 class PrimitiveObsessionChecker {
 
-  private static final Set<String> BOXED_PRIMITIVES = Set.of(
-      "Boolean", "Byte", "Character", "Double", "Float", "Integer", "Long", "Short", "String");
+  private static final Set<String> BOXED_PRIMITIVES =
+      Set.of(
+          "Boolean", "Byte", "Character", "Double", "Float", "Integer", "Long", "Short", "String");
   private static final Set<String> LOW_INFORMATION_CONCEPT_NAMES = Set.of("value");
   private static final Set<String> ARRAY_POSITION_NAMES = Set.of("length", "offset");
   private static final Set<String> NON_NUMERIC_TYPES = Set.of("boolean", "Boolean", "String");
-  private static final Map<Class<?>, String> LITERAL_TYPES = Map.of(
-      StringLiteralExpr.class, "String",
-      com.github.javaparser.ast.expr.BooleanLiteralExpr.class, "boolean",
-      CharLiteralExpr.class, "char",
-      IntegerLiteralExpr.class, "int",
-      LongLiteralExpr.class, "long");
-  private static final Set<String> VALIDATION_METHODS = Set.of(
-      "isBlank", "isEmpty", "matches", "requireNonNull", "checkArgument", "checkState");
-  private static final Set<String> TRANSFORMATION_METHODS = Set.of(
-      "trim", "strip", "stripLeading", "stripTrailing", "toLowerCase", "toUpperCase",
-      "substring", "replace", "replaceAll", "split", "parseBoolean", "parseByte",
-      "parseDouble", "parseFloat", "parseInt", "parseLong", "parseShort", "format");
-  private static final Set<BinaryExpr.Operator> ARITHMETIC_OPERATORS = Set.of(
-      BinaryExpr.Operator.PLUS,
-      BinaryExpr.Operator.MINUS,
-      BinaryExpr.Operator.MULTIPLY,
-      BinaryExpr.Operator.DIVIDE,
-      BinaryExpr.Operator.REMAINDER);
-  private static final Set<BinaryExpr.Operator> COMPARISON_OPERATORS = Set.of(
-      BinaryExpr.Operator.EQUALS,
-      BinaryExpr.Operator.NOT_EQUALS,
-      BinaryExpr.Operator.LESS,
-      BinaryExpr.Operator.LESS_EQUALS,
-      BinaryExpr.Operator.GREATER,
-      BinaryExpr.Operator.GREATER_EQUALS);
+  private static final Map<Class<?>, String> LITERAL_TYPES =
+      Map.of(
+          StringLiteralExpr.class, "String",
+          com.github.javaparser.ast.expr.BooleanLiteralExpr.class, "boolean",
+          CharLiteralExpr.class, "char",
+          IntegerLiteralExpr.class, "int",
+          LongLiteralExpr.class, "long");
+  private static final Set<String> VALIDATION_METHODS =
+      Set.of("isBlank", "isEmpty", "matches", "requireNonNull", "checkArgument", "checkState");
+  private static final Set<String> TRANSFORMATION_METHODS =
+      Set.of(
+          "trim",
+          "strip",
+          "stripLeading",
+          "stripTrailing",
+          "toLowerCase",
+          "toUpperCase",
+          "substring",
+          "replace",
+          "replaceAll",
+          "split",
+          "parseBoolean",
+          "parseByte",
+          "parseDouble",
+          "parseFloat",
+          "parseInt",
+          "parseLong",
+          "parseShort",
+          "format");
+  private static final Set<BinaryExpr.Operator> ARITHMETIC_OPERATORS =
+      Set.of(
+          BinaryExpr.Operator.PLUS,
+          BinaryExpr.Operator.MINUS,
+          BinaryExpr.Operator.MULTIPLY,
+          BinaryExpr.Operator.DIVIDE,
+          BinaryExpr.Operator.REMAINDER);
+  private static final Set<BinaryExpr.Operator> COMPARISON_OPERATORS =
+      Set.of(
+          BinaryExpr.Operator.EQUALS,
+          BinaryExpr.Operator.NOT_EQUALS,
+          BinaryExpr.Operator.LESS,
+          BinaryExpr.Operator.LESS_EQUALS,
+          BinaryExpr.Operator.GREATER,
+          BinaryExpr.Operator.GREATER_EQUALS);
 
   private final int threshold;
 
@@ -106,7 +124,8 @@ class PrimitiveObsessionChecker {
     List<CallableDeclaration<?>> callables = callables(type);
     markParameterFlow(type, callables, evidenceByConcept);
     findTravellingConcepts(callables, evidenceByConcept);
-    evidenceByConcept.forEach((concept, evidence) -> inspectCallables(concept, evidence, callables));
+    evidenceByConcept.forEach(
+        (concept, evidence) -> inspectCallables(concept, evidence, callables));
 
     evidenceByConcept.entrySet().stream()
         .filter(entry -> !LOW_INFORMATION_CONCEPT_NAMES.contains(entry.getKey().name()))
@@ -114,8 +133,9 @@ class PrimitiveObsessionChecker {
         .filter(entry -> entry.getValue().declarationCount() > 1)
         .filter(entry -> entry.getValue().hasBehaviour())
         .filter(entry -> entry.getValue().score() >= threshold)
-        .sorted(Map.Entry.comparingByKey(
-            Comparator.comparing(Concept::name).thenComparing(Concept::type)))
+        .sorted(
+            Map.Entry.comparingByKey(
+                Comparator.comparing(Concept::name).thenComparing(Concept::type)))
         .forEach(entry -> violations.accept(violation(file, entry.getKey(), entry.getValue())));
   }
 
@@ -142,24 +162,30 @@ class PrimitiveObsessionChecker {
       record.getParameters().forEach(parameter -> addDeclaration(evidence, parameter, null));
     }
 
-    callables(type).forEach(callable -> callable.getParameters()
-        .forEach(parameter -> addDeclaration(evidence, parameter, callable)));
+    callables(type)
+        .forEach(
+            callable ->
+                callable
+                    .getParameters()
+                    .forEach(parameter -> addDeclaration(evidence, parameter, callable)));
     return evidence;
   }
 
-  private static void addDeclaration(
-      Map<Concept, Evidence> evidence,
-      VariableDeclarator variable) {
-    primitiveType(variable.getType()).ifPresent(type -> registerDeclaration(
-        evidence, new Concept(variable.getNameAsString(), type), variable, null));
+  private static void addDeclaration(Map<Concept, Evidence> evidence, VariableDeclarator variable) {
+    primitiveType(variable.getType())
+        .ifPresent(
+            type ->
+                registerDeclaration(
+                    evidence, new Concept(variable.getNameAsString(), type), variable, null));
   }
 
   private static void addDeclaration(
-      Map<Concept, Evidence> evidence,
-      Parameter parameter,
-      CallableDeclaration<?> callable) {
-    primitiveType(parameter.getType()).ifPresent(type -> registerDeclaration(
-        evidence, new Concept(parameter.getNameAsString(), type), parameter, callable));
+      Map<Concept, Evidence> evidence, Parameter parameter, CallableDeclaration<?> callable) {
+    primitiveType(parameter.getType())
+        .ifPresent(
+            type ->
+                registerDeclaration(
+                    evidence, new Concept(parameter.getNameAsString(), type), parameter, callable));
   }
 
   private static void registerDeclaration(
@@ -197,27 +223,27 @@ class PrimitiveObsessionChecker {
       return;
     }
     matchingCallee(context.callables(), caller, call)
-        .ifPresent(callee -> markFlowingArguments(
-            caller, call, callee, context.evidenceByConcept()));
+        .ifPresent(
+            callee -> markFlowingArguments(caller, call, callee, context.evidenceByConcept()));
   }
 
   private static Optional<CallableDeclaration<?>> matchingCallee(
-      List<CallableDeclaration<?>> callables,
-      CallableDeclaration<?> caller,
-      MethodCallExpr call) {
-    List<CallableDeclaration<?>> candidates = callables.stream()
-        .filter(MethodDeclaration.class::isInstance)
-        .filter(callee -> callee.getNameAsString().equals(call.getNameAsString()))
-        .filter(callee -> callee.getParameters().size() == call.getArguments().size())
-        .filter(callee -> argumentsCouldMatch(caller, call, callee))
-        .toList();
+      List<CallableDeclaration<?>> callables, CallableDeclaration<?> caller, MethodCallExpr call) {
+    List<CallableDeclaration<?>> candidates =
+        callables.stream()
+            .filter(MethodDeclaration.class::isInstance)
+            .filter(callee -> callee.getNameAsString().equals(call.getNameAsString()))
+            .filter(callee -> callee.getParameters().size() == call.getArguments().size())
+            .filter(callee -> argumentsCouldMatch(caller, call, callee))
+            .toList();
     return candidates.size() == 1 ? Optional.of(candidates.get(0)) : Optional.empty();
   }
 
   private static boolean isLocalCall(MethodCallExpr call, TypeDeclaration<?> owner) {
     return call.getScope().isEmpty()
         || call.getScope().filter(ThisExpr.class::isInstance).isPresent()
-        || call.getScope().filter(NameExpr.class::isInstance)
+        || call.getScope()
+            .filter(NameExpr.class::isInstance)
             .map(NameExpr.class::cast)
             .map(NameExpr::getNameAsString)
             .filter(owner.getNameAsString()::equals)
@@ -273,16 +299,26 @@ class PrimitiveObsessionChecker {
     for (int index = 0; index < call.getArguments().size(); index++) {
       int argumentIndex = index;
       caller.getParameters().stream()
-          .filter(parameter -> referencesName(
-              call.getArgument(argumentIndex), parameter.getNameAsString()))
-          .forEach(parameter -> primitiveType(parameter.getType()).ifPresent(type -> {
-            var calleeParameter = callee.getParameter(argumentIndex);
-            if (calleeParameter.getNameAsString().equals(parameter.getNameAsString())
-                && primitiveType(calleeParameter.getType()).filter(type::equals).isPresent()) {
-              evidenceByConcept.get(new Concept(parameter.getNameAsString(), type))
-                  .markFlow(caller, callee);
-            }
-          }));
+          .filter(
+              parameter ->
+                  referencesName(call.getArgument(argumentIndex), parameter.getNameAsString()))
+          .forEach(
+              parameter ->
+                  primitiveType(parameter.getType())
+                      .ifPresent(
+                          type -> {
+                            var calleeParameter = callee.getParameter(argumentIndex);
+                            if (calleeParameter
+                                    .getNameAsString()
+                                    .equals(parameter.getNameAsString())
+                                && primitiveType(calleeParameter.getType())
+                                    .filter(type::equals)
+                                    .isPresent()) {
+                              evidenceByConcept
+                                  .get(new Concept(parameter.getNameAsString(), type))
+                                  .markFlow(caller, callee);
+                            }
+                          }));
     }
   }
 
@@ -311,24 +347,35 @@ class PrimitiveObsessionChecker {
   }
 
   private static boolean declares(CallableDeclaration<?> callable, Concept concept) {
-    return callable.getParameters().stream().anyMatch(parameter ->
-        parameter.getNameAsString().equals(concept.name())
-            && primitiveType(parameter.getType()).filter(concept.type()::equals).isPresent());
+    return callable.getParameters().stream()
+        .anyMatch(
+            parameter ->
+                parameter.getNameAsString().equals(concept.name())
+                    && primitiveType(parameter.getType())
+                        .filter(concept.type()::equals)
+                        .isPresent());
   }
 
   private static boolean hasKnownValidation(
       Node node, Concept concept, CallableDeclaration<?> callable) {
     return node.findAll(MethodCallExpr.class).stream()
-        .anyMatch(call -> VALIDATION_METHODS.contains(call.getNameAsString())
-            && references(call, concept, callable));
+        .anyMatch(
+            call ->
+                VALIDATION_METHODS.contains(call.getNameAsString())
+                    && references(call, concept, callable));
   }
 
   private static boolean hasConditionalUse(
       Node node, Concept concept, CallableDeclaration<?> callable) {
     return node.findAll(IfStmt.class).stream()
-        .anyMatch(statement -> references(statement.getCondition(), concept, callable)
-            && (abrupt(statement.getThenStmt())
-                || statement.getElseStmt().map(PrimitiveObsessionChecker::abrupt).orElse(false)))
+            .anyMatch(
+                statement ->
+                    references(statement.getCondition(), concept, callable)
+                        && (abrupt(statement.getThenStmt())
+                            || statement
+                                .getElseStmt()
+                                .map(PrimitiveObsessionChecker::abrupt)
+                                .orElse(false)))
         || node.findAll(AssertStmt.class).stream()
             .anyMatch(statement -> references(statement.getCheck(), concept, callable));
   }
@@ -360,31 +407,41 @@ class PrimitiveObsessionChecker {
   private static boolean hasTransformation(
       Node node, Concept concept, CallableDeclaration<?> callable) {
     return node.findAll(MethodCallExpr.class).stream()
-        .anyMatch(call -> TRANSFORMATION_METHODS.contains(call.getNameAsString())
-            && references(call, concept, callable));
+        .anyMatch(
+            call ->
+                TRANSFORMATION_METHODS.contains(call.getNameAsString())
+                    && references(call, concept, callable));
   }
 
   private static boolean comparesWithLiteral(
       Node node, Concept concept, CallableDeclaration<?> callable) {
     return node.findAll(BinaryExpr.class).stream()
-        .anyMatch(expression -> COMPARISON_OPERATORS.contains(expression.getOperator())
-            && references(expression, concept, callable)
-            && !expression.findAll(LiteralExpr.class).isEmpty())
+            .anyMatch(
+                expression ->
+                    COMPARISON_OPERATORS.contains(expression.getOperator())
+                        && references(expression, concept, callable)
+                        && !expression.findAll(LiteralExpr.class).isEmpty())
         || node.findAll(MethodCallExpr.class).stream()
-            .filter(call -> call.getNameAsString().equals("equals")
-                || call.getNameAsString().equals("equalsIgnoreCase"))
-            .anyMatch(call -> references(call, concept, callable)
-                && !call.findAll(LiteralExpr.class).isEmpty());
+            .filter(
+                call ->
+                    call.getNameAsString().equals("equals")
+                        || call.getNameAsString().equals("equalsIgnoreCase"))
+            .anyMatch(
+                call ->
+                    references(call, concept, callable)
+                        && !call.findAll(LiteralExpr.class).isEmpty());
   }
 
   private static boolean usesArithmetic(
       Node node, Concept concept, CallableDeclaration<?> callable) {
     return node.findAll(BinaryExpr.class).stream()
-        .anyMatch(expression -> ARITHMETIC_OPERATORS.contains(expression.getOperator())
-            && references(expression, concept, callable)
-            && (expression.getOperator() != BinaryExpr.Operator.PLUS
-                || isNumericExpression(expression.getLeft(), concept, callable)
-                    && isNumericExpression(expression.getRight(), concept, callable)));
+        .anyMatch(
+            expression ->
+                ARITHMETIC_OPERATORS.contains(expression.getOperator())
+                    && references(expression, concept, callable)
+                    && (expression.getOperator() != BinaryExpr.Operator.PLUS
+                        || isNumericExpression(expression.getLeft(), concept, callable)
+                            && isNumericExpression(expression.getRight(), concept, callable)));
   }
 
   private static boolean isNumericExpression(
@@ -397,8 +454,7 @@ class PrimitiveObsessionChecker {
     return !NON_NUMERIC_TYPES.contains(type);
   }
 
-  private static boolean references(
-      Node node, Concept concept, CallableDeclaration<?> callable) {
+  private static boolean references(Node node, Concept concept, CallableDeclaration<?> callable) {
     boolean shadowed = hasShadowingDeclaration(callable, concept);
     if (!shadowed && hasNameReference(node, concept)) {
       return true;
@@ -417,16 +473,21 @@ class PrimitiveObsessionChecker {
         .anyMatch(expression -> expression.getNameAsString().equals(concept.name()));
   }
 
-  private static boolean hasShadowingDeclaration(
-      CallableDeclaration<?> callable, Concept concept) {
-    boolean parameterWithDifferentType = callable.getParameters().stream()
-        .filter(parameter -> parameter.getNameAsString().equals(concept.name()))
-        .anyMatch(parameter -> primitiveType(parameter.getType()).filter(concept.type()::equals).isEmpty());
-    boolean localVariable = callable.findAll(VariableDeclarator.class).stream()
-        .anyMatch(variable -> variable.getNameAsString().equals(concept.name()));
-    boolean nestedParameter = callable.findAll(Parameter.class).stream()
-        .filter(parameter -> callable.getParameters().stream().noneMatch(own -> own == parameter))
-        .anyMatch(parameter -> parameter.getNameAsString().equals(concept.name()));
+  private static boolean hasShadowingDeclaration(CallableDeclaration<?> callable, Concept concept) {
+    boolean parameterWithDifferentType =
+        callable.getParameters().stream()
+            .filter(parameter -> parameter.getNameAsString().equals(concept.name()))
+            .anyMatch(
+                parameter ->
+                    primitiveType(parameter.getType()).filter(concept.type()::equals).isEmpty());
+    boolean localVariable =
+        callable.findAll(VariableDeclarator.class).stream()
+            .anyMatch(variable -> variable.getNameAsString().equals(concept.name()));
+    boolean nestedParameter =
+        callable.findAll(Parameter.class).stream()
+            .filter(
+                parameter -> callable.getParameters().stream().noneMatch(own -> own == parameter))
+            .anyMatch(parameter -> parameter.getNameAsString().equals(concept.name()));
     if (parameterWithDifferentType) {
       return true;
     }
@@ -445,28 +506,33 @@ class PrimitiveObsessionChecker {
       List<CallableDeclaration<?>> callables, Map<Concept, Evidence> evidenceByConcept) {
     Map<ConceptPair, Integer> pairCounts = new HashMap<>();
     for (CallableDeclaration<?> callable : callables) {
-      List<Concept> concepts = callable.getParameters().stream()
-          .map(parameter -> primitiveType(parameter.getType())
-              .map(type -> new Concept(parameter.getNameAsString(), type)))
-          .flatMap(Optional::stream)
-          .filter(concept -> evidenceByConcept.get(concept).participates(callable))
-          .distinct()
-          .sorted(Comparator.comparing(Concept::name).thenComparing(Concept::type))
-          .toList();
+      List<Concept> concepts =
+          callable.getParameters().stream()
+              .map(
+                  parameter ->
+                      primitiveType(parameter.getType())
+                          .map(type -> new Concept(parameter.getNameAsString(), type)))
+              .flatMap(Optional::stream)
+              .filter(concept -> evidenceByConcept.get(concept).participates(callable))
+              .distinct()
+              .sorted(Comparator.comparing(Concept::name).thenComparing(Concept::type))
+              .toList();
       for (int left = 0; left < concepts.size(); left++) {
         for (int right = left + 1; right < concepts.size(); right++) {
-          pairCounts.merge(new ConceptPair(concepts.get(left), concepts.get(right)), 1, Integer::sum);
+          pairCounts.merge(
+              new ConceptPair(concepts.get(left), concepts.get(right)), 1, Integer::sum);
         }
       }
     }
 
     pairCounts.entrySet().stream()
         .filter(entry -> entry.getValue() > 2)
-        .forEach(entry -> {
-          ConceptPair pair = entry.getKey();
-          evidenceByConcept.get(pair.left()).travelsWith.add(pair.right().name());
-          evidenceByConcept.get(pair.right()).travelsWith.add(pair.left().name());
-        });
+        .forEach(
+            entry -> {
+              ConceptPair pair = entry.getKey();
+              evidenceByConcept.get(pair.left()).travelsWith.add(pair.right().name());
+              evidenceByConcept.get(pair.right()).travelsWith.add(pair.left().name());
+            });
   }
 
   private static Optional<String> primitiveType(Type type) {
@@ -500,10 +566,11 @@ class PrimitiveObsessionChecker {
   }
 
   private static Violation violation(Path file, Concept concept, Evidence evidence) {
-    int line = evidence.relevantDeclarations().stream()
-        .map(PrimitiveObsessionChecker::line)
-        .min(Integer::compareTo)
-        .orElse(0);
+    int line =
+        evidence.relevantDeclarations().stream()
+            .map(PrimitiveObsessionChecker::line)
+            .min(Integer::compareTo)
+            .orElse(0);
     return new Violation(
         file,
         line,
@@ -522,20 +589,16 @@ class PrimitiveObsessionChecker {
     return node.getBegin().map(position -> position.line).orElse(0);
   }
 
-  private record Concept(String name, String type) {
-  }
+  private record Concept(String name, String type) {}
 
-  private record ConceptPair(Concept left, Concept right) {
-  }
+  private record ConceptPair(Concept left, Concept right) {}
 
   private record FlowContext(
       TypeDeclaration<?> owner,
       List<CallableDeclaration<?>> callables,
-      Map<Concept, Evidence> evidenceByConcept) {
-  }
+      Map<Concept, Evidence> evidenceByConcept) {}
 
-  private record NumericContext(Concept concept, CallableDeclaration<?> callable) {
-  }
+  private record NumericContext(Concept concept, CallableDeclaration<?> callable) {}
 
   private static final class NumericExpressionVisitor
       extends GenericVisitorAdapter<Boolean, NumericContext> {
@@ -570,8 +633,7 @@ class PrimitiveObsessionChecker {
           .isPresent();
     }
 
-    private static boolean numericConceptReference(
-        NameExpr expression, NumericContext context) {
+    private static boolean numericConceptReference(NameExpr expression, NumericContext context) {
       return references(expression, context.concept(), context.callable())
           && isNumericType(context.concept().type());
     }
@@ -656,8 +718,7 @@ class PrimitiveObsessionChecker {
       return fieldBacked || flowCallables.contains(callable);
     }
 
-    private void recordPrivateHelper(
-        CallableDeclaration<?> callable, boolean declaresConcept) {
+    private void recordPrivateHelper(CallableDeclaration<?> callable, boolean declaresConcept) {
       if (!(callable instanceof MethodDeclaration method)) {
         return;
       }
@@ -687,8 +748,11 @@ class PrimitiveObsessionChecker {
     private boolean isArrayPosition(Concept concept) {
       return !fieldBacked
           && ARRAY_POSITION_NAMES.contains(concept.name())
-          && flowCallables.stream().anyMatch(callable -> callable.getParameters().stream()
-              .anyMatch(parameter -> parameter.getType().isArrayType()));
+          && flowCallables.stream()
+              .anyMatch(
+                  callable ->
+                      callable.getParameters().stream()
+                          .anyMatch(parameter -> parameter.getType().isArrayType()));
     }
 
     private Set<Node> relevantDeclarations() {
@@ -731,18 +795,28 @@ class PrimitiveObsessionChecker {
       descriptions.add("repeated declaration");
       Set<String> conditionalOnly = new LinkedHashSet<>(conditionalMethods);
       conditionalOnly.removeAll(validationMethods);
-      addDescription(descriptions, !privateHelpers.isEmpty(),
+      addDescription(
+          descriptions,
+          !privateHelpers.isEmpty(),
           "private helper(s) " + String.join(", ", privateHelpers));
-      addDescription(descriptions, !validationMethods.isEmpty(),
+      addDescription(
+          descriptions,
+          !validationMethods.isEmpty(),
           "validation in " + String.join(", ", validationMethods));
-      addDescription(descriptions, !conditionalOnly.isEmpty(),
+      addDescription(
+          descriptions,
+          !conditionalOnly.isEmpty(),
           "conditional use in " + String.join(", ", conditionalOnly));
-      addDescription(descriptions, behaviourMethods().size() > 1,
+      addDescription(
+          descriptions,
+          behaviourMethods().size() > 1,
           "validation or conditional use repeated across methods");
       addDescription(descriptions, transformation, "normalization, parsing, or formatting");
       addDescription(descriptions, literalComparison, "comparison with a literal");
       addDescription(descriptions, arithmetic, "numeric arithmetic");
-      addDescription(descriptions, !travelsWith.isEmpty(),
+      addDescription(
+          descriptions,
+          !travelsWith.isEmpty(),
           "repeatedly travels with " + String.join(", ", travelsWith));
       return descriptions;
     }

@@ -1,36 +1,57 @@
 package com.larseckart.objectcalisthenics.gradle.reporting;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.larseckart.objectcalisthenics.analyzer.Violation;
 import com.larseckart.objectcalisthenics.analyzer.ViolationContext;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class MetricsPrinterTest {
 
-  @TempDir
-  Path projectDirectory;
+  @TempDir Path projectDirectory;
 
   @Test
   public void printsSortedRelativeFindingsAndAdviceOncePerRule() {
-    AnalysisResult result = new AnalysisResult(List.of(
-        violation("src/main/java/Zebra.java", 20, "too-many-instance-fields", "late", "late finding"),
-        violation("src/main/java/Zebra.java", 3, "too-many-instance-fields", "early", "early finding"),
-        violation("src/main/java/Branch.java", 20, "else-used", "choose", "choose uses else"),
-        violation("src/main/java/Apple.java", 12, "too-many-instance-fields", "Apple", "Apple has 3 fields"),
-        violation("src/main/java/Email.java", 4, "primitive-obsession", "email", "email has behaviour")
-    ));
+    AnalysisResult result =
+        new AnalysisResult(
+            List.of(
+                violation(
+                    "src/main/java/Zebra.java",
+                    20,
+                    "too-many-instance-fields",
+                    "late",
+                    "late finding"),
+                violation(
+                    "src/main/java/Zebra.java",
+                    3,
+                    "too-many-instance-fields",
+                    "early",
+                    "early finding"),
+                violation(
+                    "src/main/java/Branch.java", 20, "else-used", "choose", "choose uses else"),
+                violation(
+                    "src/main/java/Apple.java",
+                    12,
+                    "too-many-instance-fields",
+                    "Apple",
+                    "Apple has 3 fields"),
+                violation(
+                    "src/main/java/Email.java",
+                    4,
+                    "primitive-obsession",
+                    "email",
+                    "email has behaviour")));
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
-    MetricsPrinter.print(result, projectDirectory, new PrintStream(bytes, true, StandardCharsets.UTF_8));
+    MetricsPrinter.print(
+        result, projectDirectory, new PrintStream(bytes, true, StandardCharsets.UTF_8));
 
     String output = bytes.toString(StandardCharsets.UTF_8);
     assertThat(output)
@@ -44,8 +65,7 @@ class MetricsPrinterTest {
             "too-many-instance-fields | src/main/java/Zebra.java:20 | late finding",
             "ADVICE else-used",
             "ADVICE primitive-obsession",
-            "ADVICE too-many-instance-fields"
-        )
+            "ADVICE too-many-instance-fields")
         .containsOnlyOnce("ADVICE too-many-instance-fields")
         .containsOnlyOnce("Why: Keep related state and its behaviour together.");
   }
@@ -53,12 +73,13 @@ class MetricsPrinterTest {
   @Test
   public void printsSiblingSourcesRelativeToTheProject() {
     Path siblingSource = projectDirectory.resolveSibling("shared/Shared.java");
-    AnalysisResult result = new AnalysisResult(List.of(
-        new Violation(siblingSource, 7, "else-used", "choose", "choose uses else")
-    ));
+    AnalysisResult result =
+        new AnalysisResult(
+            List.of(new Violation(siblingSource, 7, "else-used", "choose", "choose uses else")));
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
-    MetricsPrinter.print(result, projectDirectory, new PrintStream(bytes, true, StandardCharsets.UTF_8));
+    MetricsPrinter.print(
+        result, projectDirectory, new PrintStream(bytes, true, StandardCharsets.UTF_8));
 
     assertThat(bytes.toString(StandardCharsets.UTF_8))
         .contains("else-used | ../shared/Shared.java:7 | choose uses else")
@@ -67,18 +88,20 @@ class MetricsPrinterTest {
 
   @Test
   public void printsSourceContextAfterItsFindingAndKeepsRuleAdvice() {
-    Violation violation = new Violation(
-        projectDirectory.resolve("src/main/java/Order.java"),
-        4,
-        "too-many-instance-fields",
-        "Order",
-        "Order has 3 instance fields (limit 2)")
-        .withContext(new ViolationContext(
-            "field-list",
-            "The type declares 3 instance fields.",
-            List.of("Customer customer", "Money total", "Clock clock"),
-            "Look for a cohesive subset of these values.",
-            "Only domain knowledge can identify that subset."));
+    Violation violation =
+        new Violation(
+                projectDirectory.resolve("src/main/java/Order.java"),
+                4,
+                "too-many-instance-fields",
+                "Order",
+                "Order has 3 instance fields (limit 2)")
+            .withContext(
+                new ViolationContext(
+                    "field-list",
+                    "The type declares 3 instance fields.",
+                    List.of("Customer customer", "Money total", "Clock clock"),
+                    "Look for a cohesive subset of these values.",
+                    "Only domain knowledge can identify that subset."));
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
     MetricsPrinter.print(
@@ -86,15 +109,16 @@ class MetricsPrinterTest {
         projectDirectory,
         new PrintStream(bytes, true, StandardCharsets.UTF_8));
 
-    assertThat(bytes.toString(StandardCharsets.UTF_8)).containsSubsequence(
-        "too-many-instance-fields | src/main/java/Order.java:4 | Order has 3 instance fields (limit 2)",
-        "CONTEXT field-list | The type declares 3 instance fields.",
-        "  Related: Customer customer",
-        "  Related: Money total",
-        "  Related: Clock clock",
-        "  Consider: Look for a cohesive subset of these values.",
-        "  Note: Only domain knowledge can identify that subset.",
-        "ADVICE too-many-instance-fields");
+    assertThat(bytes.toString(StandardCharsets.UTF_8))
+        .containsSubsequence(
+            "too-many-instance-fields | src/main/java/Order.java:4 | Order has 3 instance fields (limit 2)",
+            "CONTEXT field-list | The type declares 3 instance fields.",
+            "  Related: Customer customer",
+            "  Related: Money total",
+            "  Related: Clock clock",
+            "  Consider: Look for a cohesive subset of these values.",
+            "  Note: Only domain knowledge can identify that subset.",
+            "ADVICE too-many-instance-fields");
   }
 
   private Violation violation(String file, int line, String rule, String subject, String message) {

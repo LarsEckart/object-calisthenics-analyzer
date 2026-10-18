@@ -1,57 +1,62 @@
 package com.larseckart.objectcalisthenics.analyzer;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class RawTypePolicyCheckerTest {
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   @Test
   public void reportsRawDeclarationsWhoseTypesAreNotAllowedByPolicy() throws IOException {
-    Path source = writeSource("Customer.java", """
-        class Customer {
-          private String email;
+    Path source =
+        writeSource(
+            "Customer.java",
+            """
+                class Customer {
+                  private String email;
 
-          Customer(String email, boolean active) {
-            this.email = email;
-          }
-        }
-        """);
-    PrimitiveObsessionConfig config = new PrimitiveObsessionConfig(
-        -1, Set.of("boolean"), List.of());
+                  Customer(String email, boolean active) {
+                    this.email = email;
+                  }
+                }
+                """);
+    PrimitiveObsessionConfig config =
+        new PrimitiveObsessionConfig(-1, Set.of("boolean"), List.of());
 
     List<Violation> findings = rawTypeFindings(analyzer(config).analyze(List.of(source)));
 
+    assertThat(findings).extracting(Violation::subject).containsExactly("email", "email");
     assertThat(findings)
-        .extracting(Violation::subject)
-        .containsExactly("email", "email");
-    assertThat(findings)
-        .allSatisfy(finding -> {
-          assertThat(finding.rule()).isEqualTo("raw-domain-primitive");
-          assertThat(finding.message()).contains("raw String").contains("not allowed by the configured policy");
-          assertThat(finding.advice().caution()).contains("boundary");
-        });
+        .allSatisfy(
+            finding -> {
+              assertThat(finding.rule()).isEqualTo("raw-domain-primitive");
+              assertThat(finding.message())
+                  .contains("raw String")
+                  .contains("not allowed by the configured policy");
+              assertThat(finding.advice().caution()).contains("boundary");
+            });
   }
 
   @Test
   public void defaultConfigurationLeavesStrictRawTypePolicyDisabled() throws IOException {
-    Path source = writeSource("Customer.java", """
-        record Customer(String email, int age) {
-        }
-        """);
+    Path source =
+        writeSource(
+            "Customer.java",
+            """
+                record Customer(String email, int age) {
+                }
+                """);
 
-    List<Violation> findings = rawTypeFindings(
-        analyzer(PrimitiveObsessionConfig.defaults()).analyze(List.of(source)));
+    List<Violation> findings =
+        rawTypeFindings(analyzer(PrimitiveObsessionConfig.defaults()).analyze(List.of(source)));
 
     assertThat(findings).isEmpty();
   }

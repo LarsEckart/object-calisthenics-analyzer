@@ -1,9 +1,7 @@
 package com.larseckart.objectcalisthenics.analyzer.checks;
 
-import com.larseckart.objectcalisthenics.analyzer.Violation;
-
 import com.github.javaparser.ast.body.TypeDeclaration;
-
+import com.larseckart.objectcalisthenics.analyzer.Violation;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -15,8 +13,7 @@ import java.util.regex.Pattern;
 /**
  * Checks whether a type declaration exceeds the configured class length limit.
  *
- * <p>The limit is measured in "meaningful" source lines (non-blank and not
- * single-line comments).</p>
+ * <p>The limit is measured in "meaningful" source lines (non-blank and not single-line comments).
  */
 class ClassLengthChecker {
 

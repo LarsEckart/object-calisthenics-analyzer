@@ -1,8 +1,5 @@
 package com.larseckart.objectcalisthenics.analyzer.checks;
 
-import com.larseckart.objectcalisthenics.analyzer.Violation;
-import com.larseckart.objectcalisthenics.analyzer.ViolationContext;
-
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -14,18 +11,17 @@ import com.github.javaparser.ast.expr.EnclosedExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.NameExpr;
-import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.expr.ThisExpr;
-
+import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.larseckart.objectcalisthenics.analyzer.Violation;
+import com.larseckart.objectcalisthenics.analyzer.ViolationContext;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-/**
- * Detects methods that look like getters.
- */
+/** Detects methods that look like getters. */
 class GetterChecker {
 
   private final boolean strictNames;
@@ -41,25 +37,32 @@ class GetterChecker {
 
     violations.accept(
         new Violation(
-            file,
-            method.getBegin().map(position -> position.line).orElse(0),
-            "getter",
-            method.getNameAsString(),
-            "Method '%s' looks like a getter".formatted(method.getNameAsString()))
+                file,
+                method.getBegin().map(position -> position.line).orElse(0),
+                "getter",
+                method.getNameAsString(),
+                "Method '%s' looks like a getter".formatted(method.getNameAsString()))
             .withContext(accessorContext(method)));
   }
 
   private ViolationContext accessorContext(MethodDeclaration method) {
     String property = propertyName(method.getNameAsString());
     Optional<Expression> returnedState = directlyReturnedState(method);
-    String summary = returnedState
-        .map(expression -> "The method directly returns field '%s'.".formatted(stateName(expression)))
-        .orElseGet(() -> declaresProperty(method, property)
-            ? "The method name maps to declared field or component '%s'.".formatted(property)
-            : "The method has a getter-shaped name and no parameters.");
-    List<String> relatedCode = returnedState
-        .map(expression -> List.of("return " + expression))
-        .orElseGet(() -> List.of(method.getDeclarationAsString(false, false, false)));
+    String summary =
+        returnedState
+            .map(
+                expression ->
+                    "The method directly returns field '%s'.".formatted(stateName(expression)))
+            .orElseGet(
+                () ->
+                    declaresProperty(method, property)
+                        ? "The method name maps to declared field or component '%s'."
+                            .formatted(property)
+                        : "The method has a getter-shaped name and no parameters.");
+    List<String> relatedCode =
+        returnedState
+            .map(expression -> List.of("return " + expression))
+            .orElseGet(() -> List.of(method.getDeclarationAsString(false, false, false)));
     return new ViolationContext(
         "accessor-pattern",
         summary,
@@ -123,9 +126,7 @@ class GetterChecker {
   }
 
   private boolean declaresProperty(MethodDeclaration method, String property) {
-    return declaringType(method)
-        .map(type -> hasProperty(type, property))
-        .orElse(false);
+    return declaringType(method).map(type -> hasProperty(type, property)).orElse(false);
   }
 
   private static boolean hasProperty(TypeDeclaration<?> type, String property) {
@@ -157,13 +158,18 @@ class GetterChecker {
     if (method.getBody().isEmpty() || method.getBody().get().getStatements().size() != 1) {
       return Optional.empty();
     }
-    return method.getBody().get().getStatement(0)
+    return method
+        .getBody()
+        .get()
+        .getStatement(0)
         .toReturnStmt()
         .flatMap(ReturnStmt::getExpression)
         .map(GetterChecker::unwrap)
-        .filter(expression -> expression instanceof NameExpr
-            || expression instanceof FieldAccessExpr field
-            && field.getScope() instanceof ThisExpr);
+        .filter(
+            expression ->
+                expression instanceof NameExpr
+                    || expression instanceof FieldAccessExpr field
+                        && field.getScope() instanceof ThisExpr);
   }
 
   private static Expression unwrap(Expression expression) {

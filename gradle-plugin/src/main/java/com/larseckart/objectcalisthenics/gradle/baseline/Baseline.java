@@ -1,7 +1,6 @@
 package com.larseckart.objectcalisthenics.gradle.baseline;
 
 import com.larseckart.objectcalisthenics.analyzer.Violation;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -43,23 +42,25 @@ public final class Baseline {
 
   public static void write(Path file, Path projectDirectory, List<Violation> violations) {
     Baseline baseline = new Baseline(Set.of(), projectDirectory);
-    List<String> lines = baseline.entriesFor(violations).stream()
-        .distinct()
-        .sorted(Comparator.comparing(Entry::file)
-            .thenComparing(Entry::rule)
-            .thenComparing(Entry::subject))
-        .map(Entry::serialize)
-        .toList();
+    List<String> lines =
+        baseline.entriesFor(violations).stream()
+            .distinct()
+            .sorted(
+                Comparator.comparing(Entry::file)
+                    .thenComparing(Entry::rule)
+                    .thenComparing(Entry::subject))
+            .map(Entry::serialize)
+            .toList();
 
     try {
       Path parent = file.getParent();
       if (parent != null) {
         Files.createDirectories(parent);
       }
-      Files.write(file, java.util.stream.Stream.concat(
-          java.util.stream.Stream.of(HEADER),
-          lines.stream()
-      ).toList());
+      Files.write(
+          file,
+          java.util.stream.Stream.concat(java.util.stream.Stream.of(HEADER), lines.stream())
+              .toList());
     } catch (IOException e) {
       throw new UncheckedIOException("Failed to write baseline to " + file, e);
     }
@@ -67,11 +68,9 @@ public final class Baseline {
 
   public List<Entry> entriesFor(List<Violation> violations) {
     return violations.stream()
-        .map(violation -> new Entry(
-            relativePath(violation.file()),
-            violation.rule(),
-            violation.subject()
-        ))
+        .map(
+            violation ->
+                new Entry(relativePath(violation.file()), violation.rule(), violation.subject()))
         .toList();
   }
 
@@ -86,9 +85,10 @@ public final class Baseline {
 
   private String relativePath(Path file) {
     Path absoluteFile = file.toAbsolutePath().normalize();
-    Path stablePath = absoluteFile.startsWith(projectDirectory)
-        ? projectDirectory.relativize(absoluteFile)
-        : absoluteFile;
+    Path stablePath =
+        absoluteFile.startsWith(projectDirectory)
+            ? projectDirectory.relativize(absoluteFile)
+            : absoluteFile;
     return stablePath.toString().replace(file.getFileSystem().getSeparator(), "/");
   }
 
@@ -120,15 +120,16 @@ public final class Baseline {
       for (int index = 0; index < value.length(); index++) {
         char character = value.charAt(index);
         if (escaped) {
-          result.append(switch (character) {
-            case 't' -> '\t';
-            case 'n' -> '\n';
-            case 'r' -> '\r';
-            case '\\' -> '\\';
-            default -> throw new IllegalArgumentException(
-                "Invalid escape sequence in Object Calisthenics baseline: \\" + character
-            );
-          });
+          result.append(
+              switch (character) {
+                case 't' -> '\t';
+                case 'n' -> '\n';
+                case 'r' -> '\r';
+                case '\\' -> '\\';
+                default ->
+                    throw new IllegalArgumentException(
+                        "Invalid escape sequence in Object Calisthenics baseline: \\" + character);
+              });
           escaped = false;
         } else if (character == '\\') {
           escaped = true;
@@ -137,7 +138,8 @@ public final class Baseline {
         }
       }
       if (escaped) {
-        throw new IllegalArgumentException("Invalid trailing escape in Object Calisthenics baseline");
+        throw new IllegalArgumentException(
+            "Invalid trailing escape in Object Calisthenics baseline");
       }
       return result.toString();
     }

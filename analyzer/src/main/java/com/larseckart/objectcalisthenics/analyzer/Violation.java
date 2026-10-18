@@ -6,17 +6,12 @@ import java.util.Optional;
 /**
  * A single Object Calisthenics violation found in source code.
  *
- * @param file   source file containing the violation
- * @param line   1-based line number
- * @param rule   short rule identifier, e.g. "class-too-long"
+ * @param file source file containing the violation
+ * @param line 1-based line number
+ * @param rule short rule identifier, e.g. "class-too-long"
  * @param details human-readable details about the violation
  */
-public record Violation(
-    Path file,
-    int line,
-    String rule,
-    Details details
-) {
+public record Violation(Path file, int line, String rule, Details details) {
 
   public Violation(Path file, int line, String rule, String subject, String message) {
     this(file, line, rule, new Details(subject, message, Optional.empty()));
@@ -49,18 +44,11 @@ public record Violation(
     this(file, line, rule, "", message);
   }
 
-  /**
-   * Returns guidance for improving the design behind this violation.
-   */
+  /** Returns guidance for improving the design behind this violation. */
   public Advice advice() {
     return Advice.forRule(rule);
   }
 
   /** Human-readable details and optional source context for a violation. */
-  public record Details(
-      String subject,
-      String message,
-      Optional<ViolationContext> context
-  ) {
-  }
+  public record Details(String subject, String message, Optional<ViolationContext> context) {}
 }

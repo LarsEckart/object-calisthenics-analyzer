@@ -2,7 +2,6 @@ package com.larseckart.objectcalisthenics.analyzer;
 
 import com.larseckart.objectcalisthenics.analyzer.checks.CompilationUnitChecks;
 import com.larseckart.objectcalisthenics.analyzer.parsing.JavaSourceParser;
-
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,8 +10,8 @@ import java.util.List;
 /**
  * Analyzes Java source files for Object Calisthenics violations.
  *
- * <p>The analyzer is independent of Gradle or any build tool. It parses the
- * supplied files, applies the configured checks, and returns the findings.</p>
+ * <p>The analyzer is independent of Gradle or any build tool. It parses the supplied files, applies
+ * the configured checks, and returns the findings.
  */
 public class ObjectCalisthenicsAnalyzer {
 
@@ -24,10 +23,7 @@ public class ObjectCalisthenicsAnalyzer {
   }
 
   public ObjectCalisthenicsAnalyzer(
-      RuleSet rules,
-      PrimitiveObsessionConfig primitiveObsession,
-      List<String> classNamePatterns
-  ) {
+      RuleSet rules, PrimitiveObsessionConfig primitiveObsession, List<String> classNamePatterns) {
     this.parser = new JavaSourceParser();
     this.checks = new CompilationUnitChecks(rules, primitiveObsession, classNamePatterns);
   }

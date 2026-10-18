@@ -1,8 +1,5 @@
 package com.larseckart.objectcalisthenics.analyzer.checks;
 
-import com.larseckart.objectcalisthenics.analyzer.RuleSet;
-import com.larseckart.objectcalisthenics.analyzer.Violation;
-
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -16,7 +13,8 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.SuperExpr;
 import com.github.javaparser.ast.expr.ThisExpr;
-
+import com.larseckart.objectcalisthenics.analyzer.RuleSet;
+import com.larseckart.objectcalisthenics.analyzer.Violation;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,9 +22,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
-/**
- * Detects traversal chains that violate the Law of Demeter.
- */
+/** Detects traversal chains that violate the Law of Demeter. */
 class TraversalChainChecker {
 
   private final RuleSet rules;
@@ -90,12 +86,15 @@ class TraversalChainChecker {
   }
 
   private static String subjectOf(Expression expression) {
-    return expression.findAncestor(MethodDeclaration.class)
+    return expression
+        .findAncestor(MethodDeclaration.class)
         .map(MethodDeclaration::getNameAsString)
         .orElseGet(
-            () -> expression.findAncestor(TypeDeclaration.class)
-                .map(TypeDeclaration::getNameAsString)
-                .orElse(""));
+            () ->
+                expression
+                    .findAncestor(TypeDeclaration.class)
+                    .map(TypeDeclaration::getNameAsString)
+                    .orElse(""));
   }
 
   private int countTraversalSteps(TraversalChain chain) {
@@ -119,13 +118,15 @@ class TraversalChainChecker {
     }
 
     Expression finalCurrent = current.orElse(expression);
-    return finalCurrent.getParentNode()
+    return finalCurrent
+        .getParentNode()
         .map(parent -> isReceiverIn(parent, finalCurrent))
         .orElse(false);
   }
 
   private static Optional<Expression> transparentParent(Expression expression) {
-    return expression.getParentNode()
+    return expression
+        .getParentNode()
         .filter(parent -> isTransparentParent(parent, expression))
         .map(parent -> (Expression) parent);
   }
@@ -156,9 +157,7 @@ class TraversalChainChecker {
     Expression unwrapped = unwrap(expression);
 
     if (unwrapped instanceof MethodCallExpr call) {
-      String root = call.getScope()
-          .map(scope -> collectTraversal(scope, steps))
-          .orElse("");
+      String root = call.getScope().map(scope -> collectTraversal(scope, steps)).orElse("");
       steps.add(new ChainStep(call.getNameAsString(), true));
       return root;
     }
@@ -233,9 +232,7 @@ class TraversalChainChecker {
     return bestMatch;
   }
 
-  private record ChainStep(String name, boolean method) {
-  }
+  private record ChainStep(String name, boolean method) {}
 
-  private record TraversalChain(String root, List<ChainStep> steps) {
-  }
+  private record TraversalChain(String root, List<ChainStep> steps) {}
 }

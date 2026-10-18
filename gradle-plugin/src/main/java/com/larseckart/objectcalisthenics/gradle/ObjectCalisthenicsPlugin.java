@@ -6,105 +6,137 @@ import com.larseckart.objectcalisthenics.gradle.git.GitChangedJavaFiles;
 import com.larseckart.objectcalisthenics.gradle.tasks.ObjectCalisthenicsBaselineTask;
 import com.larseckart.objectcalisthenics.gradle.tasks.ObjectCalisthenicsCheckTask;
 import com.larseckart.objectcalisthenics.gradle.tasks.ObjectCalisthenicsReportTask;
-
+import java.io.File;
+import java.util.Set;
 import org.gradle.api.Plugin;
-import org.gradle.api.file.FileCollection;
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.api.provider.Provider;
-
-import java.io.File;
-import java.util.Set;
 
 /**
- * Gradle plugin that analyses Java source code for Object Calisthenics
- * violations.
+ * Gradle plugin that analyses Java source code for Object Calisthenics violations.
  *
- * <p>The plugin registers two tasks:</p>
+ * <p>The plugin registers two tasks:
  *
  * <ul>
- *   <li>{@code objectCalisthenicsCheck} – fails the build if violations are found</li>
- *   <li>{@code objectCalisthenicsReport} – writes a JSON report without failing</li>
+ *   <li>{@code objectCalisthenicsCheck} – fails the build if violations are found
+ *   <li>{@code objectCalisthenicsReport} – writes a JSON report without failing
  * </ul>
  */
 public class ObjectCalisthenicsPlugin implements Plugin<Project> {
 
   @Override
   public void apply(Project project) {
-    ObjectCalisthenicsExtension extension = project.getExtensions()
-        .create("objectCalisthenics", ObjectCalisthenicsExtension.class);
+    ObjectCalisthenicsExtension extension =
+        project.getExtensions().create("objectCalisthenics", ObjectCalisthenicsExtension.class);
 
-    extension.getReports().getJson().convention(
-        project.getLayout().getBuildDirectory().file("reports/calisthenics/calisthenics.json")
-    );
-    extension.getBaselineFile().convention(
-        project.getLayout().getProjectDirectory().file("object-calisthenics-baseline.txt")
-    );
+    extension
+        .getReports()
+        .getJson()
+        .convention(
+            project.getLayout().getBuildDirectory().file("reports/calisthenics/calisthenics.json"));
+    extension
+        .getBaselineFile()
+        .convention(
+            project.getLayout().getProjectDirectory().file("object-calisthenics-baseline.txt"));
 
-    project.getPlugins().withType(JavaPlugin.class, javaPlugin -> {
-      SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
-      extension.getSourceSet().convention(sourceSets.getByName("main"));
-    });
+    project
+        .getPlugins()
+        .withType(
+            JavaPlugin.class,
+            javaPlugin -> {
+              SourceSetContainer sourceSets =
+                  project.getExtensions().getByType(SourceSetContainer.class);
+              extension.getSourceSet().convention(sourceSets.getByName("main"));
+            });
 
-    TaskProvider<ObjectCalisthenicsCheckTask> checkTask = project.getTasks()
-        .register("objectCalisthenicsCheck", ObjectCalisthenicsCheckTask.class, task -> {
-          task.setGroup("Verification");
-          task.setDescription("Checks the project for Object Calisthenics violations.");
-          task.getSourceFiles().setFrom(extension.getSourceSet().map(this::allJava));
-          linkRules(task.getRules(), extension.getRules());
-          task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
-          task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
-          task.getBaselineFile().set(extension.getBaselineFile());
-          task.getBaselineFiles().setFrom(extension.getBaselineFile());
-          task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
-          task.getIgnoreFailures().set(extension.getIgnoreFailures());
-        });
+    TaskProvider<ObjectCalisthenicsCheckTask> checkTask =
+        project
+            .getTasks()
+            .register(
+                "objectCalisthenicsCheck",
+                ObjectCalisthenicsCheckTask.class,
+                task -> {
+                  task.setGroup("Verification");
+                  task.setDescription("Checks the project for Object Calisthenics violations.");
+                  task.getSourceFiles().setFrom(extension.getSourceSet().map(this::allJava));
+                  linkRules(task.getRules(), extension.getRules());
+                  task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
+                  task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
+                  task.getBaselineFile().set(extension.getBaselineFile());
+                  task.getBaselineFiles().setFrom(extension.getBaselineFile());
+                  task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
+                  task.getIgnoreFailures().set(extension.getIgnoreFailures());
+                });
 
-    Provider<Set<File>> changedFiles = project.getProviders().of(GitChangedJavaFiles.class,
-        spec -> spec.getParameters().getProjectDirectory().set(project.getProjectDir().getAbsolutePath()));
+    Provider<Set<File>> changedFiles =
+        project
+            .getProviders()
+            .of(
+                GitChangedJavaFiles.class,
+                spec ->
+                    spec.getParameters()
+                        .getProjectDirectory()
+                        .set(project.getProjectDir().getAbsolutePath()));
     Provider<FileCollection> javaSources = extension.getSourceSet().map(SourceSet::getAllJava);
-    project.getTasks().register("objectCalisthenicsCheckChanged", ObjectCalisthenicsCheckTask.class, task -> {
-      task.setGroup("Verification");
-      task.setDescription("Checks staged, unstaged, and untracked Java source files for violations.");
-      task.getSourceFiles().setFrom(changedFiles.zip(javaSources, GitChangedJavaFiles::inSourceSet));
-      linkRules(task.getRules(), extension.getRules());
-      task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
-      task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
-      task.getBaselineFile().set(extension.getBaselineFile());
-      task.getBaselineFiles().setFrom(extension.getBaselineFile());
-      task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
-      task.getIgnoreFailures().set(extension.getIgnoreFailures());
-      task.getWarnAboutStaleBaselineEntries().set(false);
-    });
+    project
+        .getTasks()
+        .register(
+            "objectCalisthenicsCheckChanged",
+            ObjectCalisthenicsCheckTask.class,
+            task -> {
+              task.setGroup("Verification");
+              task.setDescription(
+                  "Checks staged, unstaged, and untracked Java source files for violations.");
+              task.getSourceFiles()
+                  .setFrom(changedFiles.zip(javaSources, GitChangedJavaFiles::inSourceSet));
+              linkRules(task.getRules(), extension.getRules());
+              task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
+              task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
+              task.getBaselineFile().set(extension.getBaselineFile());
+              task.getBaselineFiles().setFrom(extension.getBaselineFile());
+              task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
+              task.getIgnoreFailures().set(extension.getIgnoreFailures());
+              task.getWarnAboutStaleBaselineEntries().set(false);
+            });
 
-    TaskProvider<ObjectCalisthenicsReportTask> reportTask = project.getTasks()
-        .register("objectCalisthenicsReport", ObjectCalisthenicsReportTask.class, task -> {
-          task.setGroup("Reporting");
-          task.setDescription("Writes an Object Calisthenics JSON report.");
-          task.getSourceFiles().setFrom(extension.getSourceSet().map(this::allJava));
-          linkRules(task.getRules(), extension.getRules());
-          task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
-          task.getJson().set(extension.getReports().getJson());
-          task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
-          task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
-        });
+    TaskProvider<ObjectCalisthenicsReportTask> reportTask =
+        project
+            .getTasks()
+            .register(
+                "objectCalisthenicsReport",
+                ObjectCalisthenicsReportTask.class,
+                task -> {
+                  task.setGroup("Reporting");
+                  task.setDescription("Writes an Object Calisthenics JSON report.");
+                  task.getSourceFiles().setFrom(extension.getSourceSet().map(this::allJava));
+                  linkRules(task.getRules(), extension.getRules());
+                  task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
+                  task.getJson().set(extension.getReports().getJson());
+                  task.getConsoleSummary().set(extension.getReports().getConsoleSummary());
+                  task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
+                });
 
-    TaskProvider<ObjectCalisthenicsBaselineTask> baselineTask = project.getTasks().register(
-        "objectCalisthenicsBaseline",
-        ObjectCalisthenicsBaselineTask.class,
-        task -> {
-          task.setGroup("Verification");
-          task.setDescription("Creates an Object Calisthenics baseline from current violations.");
-          task.getSourceFiles().setFrom(extension.getSourceSet().map(this::allJava));
-          linkRules(task.getRules(), extension.getRules());
-          task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
-          task.getBaselineFile().set(extension.getBaselineFile());
-          task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
-        }
-    );
+    TaskProvider<ObjectCalisthenicsBaselineTask> baselineTask =
+        project
+            .getTasks()
+            .register(
+                "objectCalisthenicsBaseline",
+                ObjectCalisthenicsBaselineTask.class,
+                task -> {
+                  task.setGroup("Verification");
+                  task.setDescription(
+                      "Creates an Object Calisthenics baseline from current violations.");
+                  task.getSourceFiles().setFrom(extension.getSourceSet().map(this::allJava));
+                  linkRules(task.getRules(), extension.getRules());
+                  task.getClassNamePatterns().set(extension.getExclusions().getClassNamePatterns());
+                  task.getBaselineFile().set(extension.getBaselineFile());
+                  task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
+                });
 
     checkTask.configure(task -> task.mustRunAfter(baselineTask));
     project.getTasks().named("check").configure(check -> check.dependsOn(checkTask));
@@ -118,7 +150,9 @@ public class ObjectCalisthenicsPlugin implements Plugin<Project> {
     target.getOneTopLevelTypePerFile().set(source.getOneTopLevelTypePerFile());
     target.getMaxClassLines().set(source.getMaxClassLines());
     target.getMaxFieldsPerClass().set(source.getMaxFieldsPerClass());
-    target.getIncludeRecordComponentsInFieldRule().set(source.getIncludeRecordComponentsInFieldRule());
+    target
+        .getIncludeRecordComponentsInFieldRule()
+        .set(source.getIncludeRecordComponentsInFieldRule());
     target.getForbidElse().set(source.getForbidElse());
     target.getMaxMethodNesting().set(source.getMaxMethodNesting());
     target.getForbidGetters().set(source.getForbidGetters());

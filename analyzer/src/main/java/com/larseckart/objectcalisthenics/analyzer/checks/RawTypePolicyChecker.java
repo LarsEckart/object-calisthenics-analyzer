@@ -1,8 +1,5 @@
 package com.larseckart.objectcalisthenics.analyzer.checks;
 
-import com.larseckart.objectcalisthenics.analyzer.PrimitiveObsessionConfig;
-import com.larseckart.objectcalisthenics.analyzer.Violation;
-
 import com.github.javaparser.ast.body.CallableDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.RecordDeclaration;
@@ -10,7 +7,8 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
-
+import com.larseckart.objectcalisthenics.analyzer.PrimitiveObsessionConfig;
+import com.larseckart.objectcalisthenics.analyzer.Violation;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
@@ -20,24 +18,20 @@ import java.util.regex.Pattern;
 /** Enforces the configured policy for raw primitive and String declarations. */
 class RawTypePolicyChecker {
 
-  private static final Set<String> BOXED_AND_STRING_TYPES = Set.of(
-      "Boolean", "Byte", "Character", "Double", "Float", "Integer", "Long", "Short", "String");
+  private static final Set<String> BOXED_AND_STRING_TYPES =
+      Set.of(
+          "Boolean", "Byte", "Character", "Double", "Float", "Integer", "Long", "Short", "String");
 
   private final Set<String> allowedRawTypes;
   private final List<Pattern> boundaryClassNamePatterns;
 
   private record FindingContext(
-      TypeDeclaration<?> owner,
-      Path file,
-      Consumer<Violation> violations
-  ) {
-  }
+      TypeDeclaration<?> owner, Path file, Consumer<Violation> violations) {}
 
   public RawTypePolicyChecker(PrimitiveObsessionConfig config) {
     allowedRawTypes = config.allowedRawTypes();
-    boundaryClassNamePatterns = config.boundaryClassNamePatterns().stream()
-        .map(Pattern::compile)
-        .toList();
+    boundaryClassNamePatterns =
+        config.boundaryClassNamePatterns().stream().map(Pattern::compile).toList();
   }
 
   public void check(TypeDeclaration<?> type, Path file, Consumer<Violation> violations) {
@@ -56,39 +50,55 @@ class RawTypePolicyChecker {
         .filter(field -> !field.isStatic())
         .forEach(field -> checkField(field, context));
     if (type instanceof RecordDeclaration record) {
-      record.getParameters().forEach(parameter ->
-          report(parameter.getType(), parameter.getNameAsString(), parameter, context));
+      record
+          .getParameters()
+          .forEach(
+              parameter ->
+                  report(parameter.getType(), parameter.getNameAsString(), parameter, context));
     }
-    type.getMembers().forEach(member -> {
-      if (member instanceof CallableDeclaration<?> callable) {
-        callable.getParameters().forEach(parameter ->
-            report(parameter.getType(), parameter.getNameAsString(), parameter, context));
-      }
-    });
+    type.getMembers()
+        .forEach(
+            member -> {
+              if (member instanceof CallableDeclaration<?> callable) {
+                callable
+                    .getParameters()
+                    .forEach(
+                        parameter ->
+                            report(
+                                parameter.getType(),
+                                parameter.getNameAsString(),
+                                parameter,
+                                context));
+              }
+            });
   }
 
   private void checkField(FieldDeclaration field, FindingContext context) {
-    field.getVariables().forEach(variable ->
-        report(variable.getType(), variable.getNameAsString(), variable, context));
+    field
+        .getVariables()
+        .forEach(
+            variable -> report(variable.getType(), variable.getNameAsString(), variable, context));
   }
 
   private void report(
       Type declarationType,
       String name,
       com.github.javaparser.ast.Node declaration,
-      FindingContext context
-  ) {
+      FindingContext context) {
     String rawType = rawTypeName(declarationType);
     if (rawType == null || allowedRawTypes.contains(rawType)) {
       return;
     }
-    context.violations().accept(new Violation(
-        context.file(),
-        declaration.getBegin().map(position -> position.line).orElse(0),
-        "raw-domain-primitive",
-        name,
-        "%s.%s uses raw %s, which is not allowed by the configured policy"
-            .formatted(context.owner().getNameAsString(), name, rawType)));
+    context
+        .violations()
+        .accept(
+            new Violation(
+                context.file(),
+                declaration.getBegin().map(position -> position.line).orElse(0),
+                "raw-domain-primitive",
+                name,
+                "%s.%s uses raw %s, which is not allowed by the configured policy"
+                    .formatted(context.owner().getNameAsString(), name, rawType)));
   }
 
   private String rawTypeName(Type type) {

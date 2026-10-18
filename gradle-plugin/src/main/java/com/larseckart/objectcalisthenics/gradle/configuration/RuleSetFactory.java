@@ -10,17 +10,24 @@ public final class RuleSetFactory {
   }
 
   public static RuleSet from(ObjectCalisthenicsRules rules) {
-    RuleSet.Builder builder = RuleSet.builder()
-        .maxClassLines(rules.getMaxClassLines().get())
-        .maxFieldsPerClass(rules.getMaxFieldsPerClass().get())
-        .maxMethodNesting(rules.getMaxMethodNesting().get())
-        .fluentChainMethods(rules.getFluentChainMethods().get())
-        .safeChainRoots(rules.getSafeChainRoots().get());
-    configure(builder, Rule.INCLUDE_RECORD_COMPONENTS_IN_FIELD_RULE, rules.getIncludeRecordComponentsInFieldRule().get());
+    RuleSet.Builder builder =
+        RuleSet.builder()
+            .maxClassLines(rules.getMaxClassLines().get())
+            .maxFieldsPerClass(rules.getMaxFieldsPerClass().get())
+            .maxMethodNesting(rules.getMaxMethodNesting().get())
+            .fluentChainMethods(rules.getFluentChainMethods().get())
+            .safeChainRoots(rules.getSafeChainRoots().get());
+    configure(
+        builder,
+        Rule.INCLUDE_RECORD_COMPONENTS_IN_FIELD_RULE,
+        rules.getIncludeRecordComponentsInFieldRule().get());
     configure(builder, Rule.FORBID_ELSE, rules.getForbidElse().get());
     configure(builder, Rule.FORBID_GETTERS, rules.getForbidGetters().get());
     configure(builder, Rule.FORBID_SETTERS, rules.getForbidSetters().get());
-    configure(builder, Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS, rules.getForbidNonFirstClassCollections().get());
+    configure(
+        builder,
+        Rule.FORBID_NON_FIRST_CLASS_COLLECTIONS,
+        rules.getForbidNonFirstClassCollections().get());
     configure(builder, Rule.STRICT_GETTER_NAMES, rules.getStrictGetterNames().get());
     configure(builder, Rule.FORBID_TRAVERSAL_CHAINS, rules.getForbidTraversalChains().get());
     configure(builder, Rule.ONE_TOP_LEVEL_TYPE_PER_FILE, rules.getOneTopLevelTypePerFile().get());

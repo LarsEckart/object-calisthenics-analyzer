@@ -1,13 +1,5 @@
 package com.larseckart.objectcalisthenics.gradle.git;
 
-import org.gradle.api.GradleException;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.provider.Property;
-import org.gradle.api.provider.ValueSource;
-import org.gradle.api.provider.ValueSourceParameters;
-import org.gradle.process.ExecOperations;
-
-import javax.inject.Inject;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -17,9 +9,17 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import javax.inject.Inject;
+import org.gradle.api.GradleException;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.ValueSource;
+import org.gradle.api.provider.ValueSourceParameters;
+import org.gradle.process.ExecOperations;
 
 /** Supplies Git changes through Gradle so they can be read with the configuration cache on. */
-public abstract class GitChangedJavaFiles implements ValueSource<Set<File>, GitChangedJavaFiles.Parameters> {
+public abstract class GitChangedJavaFiles
+    implements ValueSource<Set<File>, GitChangedJavaFiles.Parameters> {
 
   public interface Parameters extends ValueSourceParameters {
     public Property<String> getProjectDirectory();
@@ -34,7 +34,8 @@ public abstract class GitChangedJavaFiles implements ValueSource<Set<File>, GitC
     Path root = Path.of(run(directory, "rev-parse", "--show-toplevel").trim());
     Set<Path> changed = new LinkedHashSet<>();
     addPaths(changed, root, run(root, "diff", "--name-only", "-z", "--diff-filter=ACMRT"));
-    addPaths(changed, root, run(root, "diff", "--cached", "--name-only", "-z", "--diff-filter=ACMRT"));
+    addPaths(
+        changed, root, run(root, "diff", "--cached", "--name-only", "-z", "--diff-filter=ACMRT"));
     addPaths(changed, root, run(root, "ls-files", "--others", "--exclude-standard", "-z"));
     return changed.stream()
         .filter(Files::isRegularFile)
@@ -68,15 +69,19 @@ public abstract class GitChangedJavaFiles implements ValueSource<Set<File>, GitC
   private String run(Path directory, String... arguments) {
     ByteArrayOutputStream output = new ByteArrayOutputStream();
     ByteArrayOutputStream errors = new ByteArrayOutputStream();
-    var result = getExecOperations().exec(spec -> {
-      spec.commandLine("git", "-C", directory.toString());
-      spec.args((Object[]) arguments);
-      spec.setStandardOutput(output);
-      spec.setErrorOutput(errors);
-      spec.setIgnoreExitValue(true);
-    });
+    var result =
+        getExecOperations()
+            .exec(
+                spec -> {
+                  spec.commandLine("git", "-C", directory.toString());
+                  spec.args((Object[]) arguments);
+                  spec.setStandardOutput(output);
+                  spec.setErrorOutput(errors);
+                  spec.setIgnoreExitValue(true);
+                });
     if (result.getExitValue() != 0) {
-      throw new GradleException("Cannot select changed Java files: " + errors.toString(StandardCharsets.UTF_8).trim());
+      throw new GradleException(
+          "Cannot select changed Java files: " + errors.toString(StandardCharsets.UTF_8).trim());
     }
     return output.toString(StandardCharsets.UTF_8);
   }

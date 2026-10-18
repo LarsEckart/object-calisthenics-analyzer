@@ -1,17 +1,14 @@
 package com.larseckart.objectcalisthenics.gradle.configuration;
 
+import java.util.List;
+import java.util.Set;
+import javax.inject.Inject;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Input;
 
-import javax.inject.Inject;
-import java.util.List;
-import java.util.Set;
-
-/**
- * DSL for configuring which rules to enforce and their thresholds.
- */
+/** DSL for configuring which rules to enforce and their thresholds. */
 public abstract class ObjectCalisthenicsRules {
 
   @Input
@@ -76,13 +73,30 @@ public abstract class ObjectCalisthenicsRules {
     getStrictGetterNames().convention(false);
     getForbidTraversalChains().convention(true);
     getPrimitiveObsessionThreshold().convention(5);
-    getAllowedRawTypes().convention(Set.of(
-        "boolean", "byte", "char", "double", "float", "int", "long", "short",
-        "Boolean", "Byte", "Character", "Double", "Float", "Integer", "Long", "Short",
-        "String"));
+    getAllowedRawTypes()
+        .convention(
+            Set.of(
+                "boolean",
+                "byte",
+                "char",
+                "double",
+                "float",
+                "int",
+                "long",
+                "short",
+                "Boolean",
+                "Byte",
+                "Character",
+                "Double",
+                "Float",
+                "Integer",
+                "Long",
+                "Short",
+                "String"));
     getBoundaryClassNamePatterns().convention(List.of());
     getFluentChainMethods().convention(Set.of());
-    getSafeChainRoots().convention(Set.of(
-        "System.out", "System.err", "java.lang.System.out", "java.lang.System.err"));
+    getSafeChainRoots()
+        .convention(
+            Set.of("System.out", "System.err", "java.lang.System.out", "java.lang.System.err"));
   }
 }

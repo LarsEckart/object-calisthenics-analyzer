@@ -3,14 +3,13 @@ package com.larseckart.objectcalisthenics.cli;
 import com.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.larseckart.objectcalisthenics.analyzer.ObjectCalisthenicsAnalyzer;
 import com.larseckart.objectcalisthenics.analyzer.Violation;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
  * Small command-line entry point for analyzing a directory of Java source.
  *
- * <p>Usage: {@code object-calisthenics-analyzer <source-root>}</p>
+ * <p>Usage: {@code object-calisthenics-analyzer <source-root>}
  */
 public class ObjectCalisthenicsAnalyzerCli {
 
@@ -24,27 +23,27 @@ public class ObjectCalisthenicsAnalyzerCli {
     ObjectCalisthenicsAnalyzer analyzer = new ObjectCalisthenicsAnalyzer();
     AnalysisResult result = analyzer.analyze(sourceRoot);
 
-    long classesTooLong = result.violations().stream()
-        .filter(v -> v.rule().equals("class-too-long"))
-        .count();
-    long tooManyFields = result.violations().stream()
-        .filter(v -> v.rule().equals("too-many-instance-fields") || v.rule().equals("too-many-record-components"))
-        .count();
-    long methodsWithElse = result.violations().stream()
-        .filter(v -> v.rule().equals("else-used"))
-        .count();
-    long methodsOverNested = result.violations().stream()
-        .filter(v -> v.rule().equals("method-over-nested"))
-        .count();
-    long gettersSetters = result.violations().stream()
-        .filter(v -> v.rule().equals("getter") || v.rule().equals("setter"))
-        .count();
-    long traversalChains = result.violations().stream()
-        .filter(v -> v.rule().equals("traversal-chain"))
-        .count();
-    long primitiveObsessions = result.violations().stream()
-        .filter(v -> v.rule().equals("primitive-obsession"))
-        .count();
+    long classesTooLong =
+        result.violations().stream().filter(v -> v.rule().equals("class-too-long")).count();
+    long tooManyFields =
+        result.violations().stream()
+            .filter(
+                v ->
+                    v.rule().equals("too-many-instance-fields")
+                        || v.rule().equals("too-many-record-components"))
+            .count();
+    long methodsWithElse =
+        result.violations().stream().filter(v -> v.rule().equals("else-used")).count();
+    long methodsOverNested =
+        result.violations().stream().filter(v -> v.rule().equals("method-over-nested")).count();
+    long gettersSetters =
+        result.violations().stream()
+            .filter(v -> v.rule().equals("getter") || v.rule().equals("setter"))
+            .count();
+    long traversalChains =
+        result.violations().stream().filter(v -> v.rule().equals("traversal-chain")).count();
+    long primitiveObsessions =
+        result.violations().stream().filter(v -> v.rule().equals("primitive-obsession")).count();
 
     System.out.println("METRIC violations=" + result.totalViolations());
     System.out.println("METRIC classes_over_50=" + classesTooLong);
@@ -56,7 +55,14 @@ public class ObjectCalisthenicsAnalyzerCli {
     System.out.println("METRIC primitive_obsessions=" + primitiveObsessions);
 
     for (Violation violation : result.violations()) {
-      System.out.println(violation.file() + ":" + violation.line() + " " + violation.rule() + " - " + violation.message());
+      System.out.println(
+          violation.file()
+              + ":"
+              + violation.line()
+              + " "
+              + violation.rule()
+              + " - "
+              + violation.message());
     }
   }
 }

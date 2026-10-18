@@ -1,15 +1,13 @@
 package com.larseckart.objectcalisthenics.analyzer.checks;
 
-import com.larseckart.objectcalisthenics.analyzer.RuleSet;
-import com.larseckart.objectcalisthenics.analyzer.Violation;
-import com.larseckart.objectcalisthenics.analyzer.ViolationContext;
-
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import com.github.javaparser.ast.type.Type;
-
+import com.larseckart.objectcalisthenics.analyzer.RuleSet;
+import com.larseckart.objectcalisthenics.analyzer.Violation;
+import com.larseckart.objectcalisthenics.analyzer.ViolationContext;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
@@ -17,8 +15,8 @@ import java.util.function.Consumer;
 /**
  * Checks field-related Object Calisthenics rules for a type declaration.
  *
- * <p>This includes too many instance fields/record components, suppressed field
- * rules, and first-class collection violations.</p>
+ * <p>This includes too many instance fields/record components, suppressed field rules, and
+ * first-class collection violations.
  */
 class FieldChecker {
 
@@ -35,7 +33,8 @@ class FieldChecker {
 
     if (type instanceof ClassOrInterfaceDeclaration classType && !classType.isInterface()) {
       checkClassFields(classType, file, violations);
-    } else if (type instanceof RecordDeclaration record && rules.includeRecordComponentsInFieldRule()) {
+    } else if (type instanceof RecordDeclaration record
+        && rules.includeRecordComponentsInFieldRule()) {
       checkRecordFields(record, file, violations);
     }
 
@@ -59,12 +58,12 @@ class FieldChecker {
 
     violations.accept(
         new Violation(
-            file,
-            type.getBegin().map(position -> position.line).orElse(0),
-            "too-many-instance-fields",
-            type.getNameAsString(),
-            "%s has %d instance fields (limit %d)"
-                .formatted(type.getNameAsString(), instanceFields, rules.maxFieldsPerClass()))
+                file,
+                type.getBegin().map(position -> position.line).orElse(0),
+                "too-many-instance-fields",
+                type.getNameAsString(),
+                "%s has %d instance fields (limit %d)"
+                    .formatted(type.getNameAsString(), instanceFields, rules.maxFieldsPerClass()))
             .withContext(fieldContext("instance fields", fields)));
   }
 
@@ -78,12 +77,12 @@ class FieldChecker {
 
     violations.accept(
         new Violation(
-            file,
-            record.getBegin().map(position -> position.line).orElse(0),
-            "too-many-record-components",
-            record.getNameAsString(),
-            "%s has %d record components (limit %d)"
-                .formatted(record.getNameAsString(), components, rules.maxFieldsPerClass()))
+                file,
+                record.getBegin().map(position -> position.line).orElse(0),
+                "too-many-record-components",
+                record.getNameAsString(),
+                "%s has %d record components (limit %d)"
+                    .formatted(record.getNameAsString(), components, rules.maxFieldsPerClass()))
             .withContext(fieldContext("record components", fields)));
   }
 
@@ -103,7 +102,8 @@ class FieldChecker {
     }
 
     List<FieldInfo> fields = fieldInfos(type);
-    long collectionFields = fields.stream().filter(field -> CollectionTypes.isCollectionType(field.type())).count();
+    long collectionFields =
+        fields.stream().filter(field -> CollectionTypes.isCollectionType(field.type())).count();
     long otherFields = fields.size() - collectionFields;
 
     if (collectionFields == 0) {

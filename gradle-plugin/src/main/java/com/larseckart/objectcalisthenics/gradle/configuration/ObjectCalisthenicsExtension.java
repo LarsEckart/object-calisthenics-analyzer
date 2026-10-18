@@ -1,16 +1,13 @@
 package com.larseckart.objectcalisthenics.gradle.configuration;
 
+import javax.inject.Inject;
 import org.gradle.api.Action;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 
-import javax.inject.Inject;
-
-/**
- * Gradle DSL extension for the Object Calisthenics plugin.
- */
+/** Gradle DSL extension for the Object Calisthenics plugin. */
 public class ObjectCalisthenicsExtension {
 
   private final Property<SourceSet> sourceSet;

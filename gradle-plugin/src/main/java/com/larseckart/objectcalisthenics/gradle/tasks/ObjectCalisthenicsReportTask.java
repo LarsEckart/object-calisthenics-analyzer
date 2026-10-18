@@ -1,14 +1,17 @@
 package com.larseckart.objectcalisthenics.gradle.tasks;
 
-import com.larseckart.objectcalisthenics.gradle.configuration.ObjectCalisthenicsRules;
-import com.larseckart.objectcalisthenics.gradle.configuration.RuleSetFactory;
-import com.larseckart.objectcalisthenics.gradle.reporting.JsonReportWriter;
-import com.larseckart.objectcalisthenics.gradle.reporting.MetricsPrinter;
-
 import com.larseckart.objectcalisthenics.analyzer.AnalysisResult;
 import com.larseckart.objectcalisthenics.analyzer.ObjectCalisthenicsAnalyzer;
 import com.larseckart.objectcalisthenics.analyzer.PrimitiveObsessionConfig;
 import com.larseckart.objectcalisthenics.analyzer.RuleSet;
+import com.larseckart.objectcalisthenics.gradle.configuration.ObjectCalisthenicsRules;
+import com.larseckart.objectcalisthenics.gradle.configuration.RuleSetFactory;
+import com.larseckart.objectcalisthenics.gradle.reporting.JsonReportWriter;
+import com.larseckart.objectcalisthenics.gradle.reporting.MetricsPrinter;
+import java.io.File;
+import java.nio.file.Path;
+import java.util.List;
+import javax.inject.Inject;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
@@ -27,17 +30,11 @@ import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 
-import java.io.File;
-import java.nio.file.Path;
-import java.util.List;
-
-import javax.inject.Inject;
-
 /**
  * Gradle task that analyses Java source and writes a JSON report.
  *
- * <p>Unlike {@link ObjectCalisthenicsCheckTask}, this task never fails the
- * build, so it can be used to inspect the current state of a legacy codebase.</p>
+ * <p>Unlike {@link ObjectCalisthenicsCheckTask}, this task never fails the build, so it can be used
+ * to inspect the current state of a legacy codebase.
  */
 @CacheableTask
 public abstract class ObjectCalisthenicsReportTask extends DefaultTask {
@@ -70,30 +67,27 @@ public abstract class ObjectCalisthenicsReportTask extends DefaultTask {
   @TaskAction
   public void report() {
     RuleSet ruleSet = RuleSetFactory.from(getRules());
-    ObjectCalisthenicsAnalyzer analyzer = new ObjectCalisthenicsAnalyzer(
-        ruleSet,
-        new PrimitiveObsessionConfig(
-            getRules().getPrimitiveObsessionThreshold().get(),
-            getRules().getAllowedRawTypes().get(),
-            getRules().getBoundaryClassNamePatterns().get()),
-        getClassNamePatterns().get()
-    );
+    ObjectCalisthenicsAnalyzer analyzer =
+        new ObjectCalisthenicsAnalyzer(
+            ruleSet,
+            new PrimitiveObsessionConfig(
+                getRules().getPrimitiveObsessionThreshold().get(),
+                getRules().getAllowedRawTypes().get(),
+                getRules().getBoundaryClassNamePatterns().get()),
+            getClassNamePatterns().get());
 
-    List<Path> files = getSourceFiles().getFiles().stream()
-        .map(File::toPath)
-        .filter(p -> p.toString().endsWith(".java"))
-        .toList();
+    List<Path> files =
+        getSourceFiles().getFiles().stream()
+            .map(File::toPath)
+            .filter(p -> p.toString().endsWith(".java"))
+            .toList();
 
     AnalysisResult result = analyzer.analyze(files);
 
     JsonReportWriter.write(result, getJson().get().getAsFile().toPath());
 
     if (getConsoleSummary().get()) {
-      MetricsPrinter.print(
-          result,
-          getProjectDirectory().get().getAsFile().toPath(),
-          System.out
-      );
+      MetricsPrinter.print(result, getProjectDirectory().get().getAsFile().toPath(), System.out);
     }
   }
 }

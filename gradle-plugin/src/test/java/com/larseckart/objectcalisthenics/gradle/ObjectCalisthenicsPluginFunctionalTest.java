@@ -1,23 +1,21 @@
 package com.larseckart.objectcalisthenics.gradle;
 
-import org.gradle.testkit.runner.BuildResult;
-import org.gradle.testkit.runner.GradleRunner;
-import org.gradle.testkit.runner.TaskOutcome;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.gradle.testkit.runner.BuildResult;
+import org.gradle.testkit.runner.GradleRunner;
+import org.gradle.testkit.runner.TaskOutcome;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class ObjectCalisthenicsPluginFunctionalTest {
 
-  @TempDir
-  Path projectDir;
+  @TempDir Path projectDir;
 
   @Test
   public void companionFileRuleIsOptInAndWorksWithReportsAndBaseline() throws IOException {
@@ -27,13 +25,18 @@ class ObjectCalisthenicsPluginFunctionalTest {
     assertThat(runCheck().getOutput()).doesNotContain("multiple-top-level-types");
 
     writeBuildScript("rules { oneTopLevelTypePerFile.set(true) }");
-    BuildResult failure = runner("objectCalisthenicsCheck")
-        .withArguments("objectCalisthenicsCheck", "--configuration-cache").buildAndFail();
-    assertThat(failure.getOutput()).contains(
-        "multiple-top-level-types | src/main/java/Main.java:2 | Helper");
-    assertThat(runner("objectCalisthenicsCheck")
-        .withArguments("objectCalisthenicsCheck", "--configuration-cache").buildAndFail()
-        .getOutput()).contains("Reusing configuration cache");
+    BuildResult failure =
+        runner("objectCalisthenicsCheck")
+            .withArguments("objectCalisthenicsCheck", "--configuration-cache")
+            .buildAndFail();
+    assertThat(failure.getOutput())
+        .contains("multiple-top-level-types | src/main/java/Main.java:2 | Helper");
+    assertThat(
+            runner("objectCalisthenicsCheck")
+                .withArguments("objectCalisthenicsCheck", "--configuration-cache")
+                .buildAndFail()
+                .getOutput())
+        .contains("Reusing configuration cache");
     runReport();
     assertThat(Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json")))
         .contains("multiple-top-level-types", "Helper", "named source file");
@@ -53,54 +56,60 @@ class ObjectCalisthenicsPluginFunctionalTest {
     BuildResult result = runCheckAndFail();
 
     assertCheckOutputContainsHeadlineFailure(result);
-    assertThat(projectDir.resolve("build/reports/calisthenics/calisthenics.json"))
-        .doesNotExist();
+    assertThat(projectDir.resolve("build/reports/calisthenics/calisthenics.json")).doesNotExist();
   }
 
   @Test
   public void ignoreFailuresReportsViolationsWithoutFailing() throws IOException {
     writeSettings();
     writeBadJavaSource();
-    writeBuildScript("""
+    writeBuildScript(
+        """
         ignoreFailures.set(true)
         """);
 
     BuildResult result = runCheck();
 
     assertThat(result.getOutput()).contains("METRIC violations=2");
-    assertThat(result.getOutput()).contains(
-        "Object Calisthenics: 2 violations found; ignoring failures as configured.");
+    assertThat(result.getOutput())
+        .contains("Object Calisthenics: 2 violations found; ignoring failures as configured.");
     assertThat(result.getOutput()).doesNotContain("new violation(s)");
   }
 
   @Test
-  public void changedCheckOnlyAnalyzesUntrackedJavaInTheSourceSet() throws IOException, InterruptedException {
+  public void changedCheckOnlyAnalyzesUntrackedJavaInTheSourceSet()
+      throws IOException, InterruptedException {
     writeSettings();
     writeBadJavaSource();
     writeBuildScript();
     initializeGitAndCommit();
-    writeJavaSource("New.java", "class New { private int value; public int getValue() { return value; } }");
-    Files.writeString(projectDir.resolve("Outside.java"),
+    writeJavaSource(
+        "New.java", "class New { private int value; public int getValue() { return value; } }");
+    Files.writeString(
+        projectDir.resolve("Outside.java"),
         "class Outside { private int value; public int getValue() { return value; } }");
 
-    BuildResult result = runner("objectCalisthenicsCheckChanged")
-        .withArguments("objectCalisthenicsCheckChanged", "--configuration-cache")
-        .buildAndFail();
+    BuildResult result =
+        runner("objectCalisthenicsCheckChanged")
+            .withArguments("objectCalisthenicsCheckChanged", "--configuration-cache")
+            .buildAndFail();
 
     assertThat(result.getOutput()).contains("Object Calisthenics: 1 violations found");
     assertThat(result.getOutput()).contains("Configuration cache entry stored");
     assertThat(result.getOutput()).doesNotContain("Bad.java:").doesNotContain("Outside.java:");
 
     Files.delete(projectDir.resolve("src/main/java/New.java"));
-    BuildResult noChanges = runner("objectCalisthenicsCheckChanged")
-        .withArguments("objectCalisthenicsCheckChanged", "--configuration-cache")
-        .build();
+    BuildResult noChanges =
+        runner("objectCalisthenicsCheckChanged")
+            .withArguments("objectCalisthenicsCheckChanged", "--configuration-cache")
+            .build();
     assertThat(noChanges.task(":objectCalisthenicsCheckChanged").getOutcome())
         .isEqualTo(TaskOutcome.NO_SOURCE);
   }
 
   @Test
-  public void changedCheckIncludesStagedAndUnstagedChanges() throws IOException, InterruptedException {
+  public void changedCheckIncludesStagedAndUnstagedChanges()
+      throws IOException, InterruptedException {
     writeSettings();
     writeBadJavaSource();
     writeJavaSource("Unstaged.java", "class Unstaged {}\n");
@@ -109,7 +118,8 @@ class ObjectCalisthenicsPluginFunctionalTest {
     Path badSource = projectDir.resolve("src/main/java/Bad.java");
     Files.writeString(badSource, "\n" + Files.readString(badSource));
     git(List.of("add", "src/main/java/Bad.java"));
-    Files.writeString(projectDir.resolve("src/main/java/Unstaged.java"),
+    Files.writeString(
+        projectDir.resolve("src/main/java/Unstaged.java"),
         "class Unstaged { private int value; public int getValue() { return value; } }\n");
 
     BuildResult result = runner("objectCalisthenicsCheckChanged").buildAndFail();
@@ -127,18 +137,21 @@ class ObjectCalisthenicsPluginFunctionalTest {
 
     BuildResult result = runner("objectCalisthenicsCheckChanged").build();
 
-    assertThat(result.task(":objectCalisthenicsCheckChanged").getOutcome()).isEqualTo(TaskOutcome.NO_SOURCE);
+    assertThat(result.task(":objectCalisthenicsCheckChanged").getOutcome())
+        .isEqualTo(TaskOutcome.NO_SOURCE);
   }
 
   @Test
-  public void changedCheckDoesNotReportStaleEntriesFromUntouchedFiles() throws IOException, InterruptedException {
+  public void changedCheckDoesNotReportStaleEntriesFromUntouchedFiles()
+      throws IOException, InterruptedException {
     writeSettings();
     writeBadJavaSource();
     writeJavaSource("Clean.java", "class Clean {}\n");
     writeBuildScript("ignoreFailures.set(true)");
     initializeGitAndCommit();
     runner("objectCalisthenicsBaseline").build();
-    Files.writeString(projectDir.resolve("src/main/java/Clean.java"),
+    Files.writeString(
+        projectDir.resolve("src/main/java/Clean.java"),
         "class Clean { private int value; public int getValue() { return value; } }\n");
 
     BuildResult result = runner("objectCalisthenicsCheckChanged").build();
@@ -159,7 +172,8 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   @Test
-  public void baselineIgnoresExistingViolationsAndLineChangesButRejectsNewOnes() throws IOException {
+  public void baselineIgnoresExistingViolationsAndLineChangesButRejectsNewOnes()
+      throws IOException {
     writeSettings();
     writeBadJavaSource();
     writeBuildScript();
@@ -178,7 +192,9 @@ class ObjectCalisthenicsPluginFunctionalTest {
     Files.writeString(badSource, "\n\n" + Files.readString(badSource));
     runCheck();
 
-    Files.writeString(projectDir.resolve("src/main/java/NewViolation.java"), """
+    Files.writeString(
+        projectDir.resolve("src/main/java/NewViolation.java"),
+        """
         public class NewViolation {
           private int value;
 
@@ -195,7 +211,8 @@ class ObjectCalisthenicsPluginFunctionalTest {
     writeBuildScript("ignoreFailures.set(true)");
     BuildResult ignoredCheck = runCheck();
     assertThat(ignoredCheck.getOutput())
-        .contains("Object Calisthenics violations found: 1 new violation(s); ignoring failures as configured.");
+        .contains(
+            "Object Calisthenics violations found: 1 new violation(s); ignoring failures as configured.");
   }
 
   @Test
@@ -219,7 +236,8 @@ class ObjectCalisthenicsPluginFunctionalTest {
   public void baselineRespectsClassNameExclusions() throws IOException {
     writeSettings();
     writeBadJavaSource();
-    writeBuildScript("""
+    writeBuildScript(
+        """
         exclusions {
             classNamePatterns.add("Bad")
         }
@@ -239,7 +257,9 @@ class ObjectCalisthenicsPluginFunctionalTest {
   @Test
   public void excludedResponseDoesNotCreateStaleBaselineEntry() throws IOException {
     writeSettings();
-    writeJavaSource("ExcludedResponse.java", """
+    writeJavaSource(
+        "ExcludedResponse.java",
+        """
         class ExcludedResponse {
           private int first;
           private int second;
@@ -250,7 +270,8 @@ class ObjectCalisthenicsPluginFunctionalTest {
           }
         }
         """);
-    writeBuildScript("""
+    writeBuildScript(
+        """
         exclusions {
             classNamePatterns.add(".*Response$")
         }
@@ -264,9 +285,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
     assertThat(Files.readString(baseline)).doesNotContain("ExcludedResponse");
 
     BuildResult checkResult = runCheck();
-    assertThat(checkResult.getOutput())
-        .contains("violations=0")
-        .doesNotContain("stale");
+    assertThat(checkResult.getOutput()).contains("violations=0").doesNotContain("stale");
   }
 
   @Test
@@ -284,7 +303,9 @@ class ObjectCalisthenicsPluginFunctionalTest {
   public void independentlyRegisteredReportTaskUsesProjectDirectoryByDefault() throws IOException {
     writeSettings();
     writeBadJavaSource();
-    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+    Files.writeString(
+        projectDir.resolve("build.gradle.kts"),
+        """
         plugins {
             java
             id("com.larseckart.object-calisthenics")
@@ -306,9 +327,10 @@ class ObjectCalisthenicsPluginFunctionalTest {
 
   @Test
   public void reportTaskAppliesConfiguredFirstClassCollectionRule() throws IOException {
-    String json = runReportTaskWithSourceAndConfig(
-        "CollectionOwner.java",
-        """
+    String json =
+        runReportTaskWithSourceAndConfig(
+            "CollectionOwner.java",
+            """
             import java.util.List;
 
             class CollectionOwner {
@@ -316,7 +338,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
               private int count;
             }
             """,
-        """
+            """
             rules {
                 forbidNonFirstClassCollections.set(true)
             }
@@ -328,19 +350,28 @@ class ObjectCalisthenicsPluginFunctionalTest {
 
   @Test
   public void signatureFindingsUseTheExistingCollectionSwitch() throws IOException {
-    String source = """
+    String source =
+        """
         class Search {
           java.util.List<String> events(java.util.Map<String, String> env) { return null; }
         }
         """;
-    String enabled = runReportTaskWithSourceAndConfig("Search.java", source, """
+    String enabled =
+        runReportTaskWithSourceAndConfig(
+            "Search.java",
+            source,
+            """
         rules { forbidNonFirstClassCollections.set(true) }
         """);
     assertThat(enabled).contains("\"unwrapped_collections\": 2");
     assertThat(enabled).contains("\"rule\": \"unwrapped-collection\"");
     assertThat(enabled).contains("\"subject\": \"Search.events\"");
 
-    String disabled = runReportTaskWithSourceAndConfig("Search.java", source, """
+    String disabled =
+        runReportTaskWithSourceAndConfig(
+            "Search.java",
+            source,
+            """
         rules { forbidNonFirstClassCollections.set(false) }
         """);
     assertThat(disabled).contains("\"unwrapped_collections\": 0");
@@ -349,13 +380,14 @@ class ObjectCalisthenicsPluginFunctionalTest {
 
   @Test
   public void reportTaskCanExcludeRecordComponentsFromFieldRule() throws IOException {
-    String json = runReportTaskWithSourceAndConfig(
-        "Configuration.java",
-        """
+    String json =
+        runReportTaskWithSourceAndConfig(
+            "Configuration.java",
+            """
             record Configuration(String host, int port, boolean secure) {
             }
             """,
-        """
+            """
             rules {
                 includeRecordComponentsInFieldRule.set(false)
             }
@@ -370,13 +402,16 @@ class ObjectCalisthenicsPluginFunctionalTest {
     writeSettings();
     Path sourceDir = projectDir.resolve("src/main/java/");
     Files.createDirectories(sourceDir);
-    Files.writeString(sourceDir.resolve("ConfiguredRules.java"), """
+    Files.writeString(
+        sourceDir.resolve("ConfiguredRules.java"),
+        """
         class ConfiguredRules {
           public boolean isReady() { return calculateReadiness(); }
           public Object address() { return customer().address(); }
         }
         """);
-    writeBuildScript("""
+    writeBuildScript(
+        """
         rules {
             strictGetterNames.set(true)
             forbidTraversalChains.set(true)
@@ -395,9 +430,10 @@ class ObjectCalisthenicsPluginFunctionalTest {
 
   @Test
   public void reportTaskIncludesPrimitiveObsessionFindings() throws IOException {
-    String json = runReportTaskWithSourceAndConfig(
-        "Accounts.java",
-        """
+    String json =
+        runReportTaskWithSourceAndConfig(
+            "Accounts.java",
+            """
             class Accounts {
               void register(String email) {
                 validateEmail(email);
@@ -410,7 +446,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
               }
             }
             """,
-        """
+            """
             rules {
                 primitiveObsessionThreshold.set(5)
             }
@@ -423,9 +459,10 @@ class ObjectCalisthenicsPluginFunctionalTest {
 
   @Test
   public void reportTaskAppliesPrimitiveObsessionThreshold() throws IOException {
-    String json = runReportTaskWithSourceAndConfig(
-        "Accounts.java",
-        """
+    String json =
+        runReportTaskWithSourceAndConfig(
+            "Accounts.java",
+            """
             class Accounts {
               void register(String email) {
                 validateEmail(email);
@@ -438,7 +475,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
               }
             }
             """,
-        """
+            """
             rules {
                 primitiveObsessionThreshold.set(8)
             }
@@ -450,9 +487,10 @@ class ObjectCalisthenicsPluginFunctionalTest {
 
   @Test
   public void reportTaskAppliesRawTypePolicyAndBoundaryExceptions() throws IOException {
-    String json = runReportTaskWithSourceAndConfig(
-        "Customers.java",
-        """
+    String json =
+        runReportTaskWithSourceAndConfig(
+            "Customers.java",
+            """
             class Customer {
               private String email;
             }
@@ -460,7 +498,7 @@ class ObjectCalisthenicsPluginFunctionalTest {
             record CustomerRequest(String email, boolean active) {
             }
             """,
-        """
+            """
             rules {
                 primitiveObsessionThreshold.set(-1)
                 allowedRawTypes.set(setOf("boolean"))
@@ -477,7 +515,9 @@ class ObjectCalisthenicsPluginFunctionalTest {
   @Test
   public void exclusionsIgnoreMatchingClassesAndKeepNonMatchingFailures() throws IOException {
     writeSettings();
-    writeJavaSource("ApiTypes.java", """
+    writeJavaSource(
+        "ApiTypes.java",
+        """
         class JoinMatchResponse {
           private int first;
           private int second;
@@ -494,7 +534,8 @@ class ObjectCalisthenicsPluginFunctionalTest {
           private int third;
         }
         """);
-    writeBuildScript("""
+    writeBuildScript(
+        """
         exclusions {
             classNamePatterns.add(".*Response$")
         }
@@ -513,7 +554,9 @@ class ObjectCalisthenicsPluginFunctionalTest {
   @Test
   public void canCombineSeveralClassNamePatterns() throws IOException {
     writeSettings();
-    writeJavaSource("Types.java", """
+    writeJavaSource(
+        "Types.java",
+        """
         class ApiResponse {
           private int first;
           private int second;
@@ -532,7 +575,8 @@ class ObjectCalisthenicsPluginFunctionalTest {
           private int third;
         }
         """);
-    writeBuildScript("""
+    writeBuildScript(
+        """
         exclusions {
             classNamePatterns.add(".*Response$")
             classNamePatterns.add("Api.*")
@@ -550,7 +594,9 @@ class ObjectCalisthenicsPluginFunctionalTest {
   @Test
   public void exclusionsMatchNestedClassesAndRecordsBySimpleName() throws IOException {
     writeSettings();
-    writeJavaSource("NestedTypes.java", """
+    writeJavaSource(
+        "NestedTypes.java",
+        """
         class Container {
           static class NestedResponse {
             private int first;
@@ -575,7 +621,8 @@ class ObjectCalisthenicsPluginFunctionalTest {
         record ReceiptRequest(int first, int second, int third) {
         }
         """);
-    writeBuildScript("""
+    writeBuildScript(
+        """
         exclusions {
             classNamePatterns.add(".*Response$")
         }
@@ -601,13 +648,17 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   private void writeSettings() throws IOException {
-    Files.writeString(projectDir.resolve("settings.gradle.kts"), """
+    Files.writeString(
+        projectDir.resolve("settings.gradle.kts"),
+        """
         rootProject.name = "functional-test"
         """);
   }
 
   private void writeBuildScript() throws IOException {
-    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+    Files.writeString(
+        projectDir.resolve("build.gradle.kts"),
+        """
         plugins {
             java
             id("com.larseckart.object-calisthenics")
@@ -616,7 +667,9 @@ class ObjectCalisthenicsPluginFunctionalTest {
   }
 
   private void writeBuildScript(String objectCalisthenicsBlock) throws IOException {
-    Files.writeString(projectDir.resolve("build.gradle.kts"), """
+    Files.writeString(
+        projectDir.resolve("build.gradle.kts"),
+        """
         plugins {
             java
             id("com.larseckart.object-calisthenics")
@@ -625,13 +678,22 @@ class ObjectCalisthenicsPluginFunctionalTest {
         objectCalisthenics {
             %s
         }
-        """.formatted(objectCalisthenicsBlock.stripIndent()));
+        """
+            .formatted(objectCalisthenicsBlock.stripIndent()));
   }
 
   private void initializeGitAndCommit() throws IOException, InterruptedException {
     git(List.of("init", "-q"));
     git(List.of("add", "."));
-    git(List.of("-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "initial"));
+    git(
+        List.of(
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.com",
+            "commit",
+            "-qm",
+            "initial"));
   }
 
   private void git(List<String> arguments) throws IOException, InterruptedException {
@@ -665,8 +727,8 @@ class ObjectCalisthenicsPluginFunctionalTest {
     return Files.readString(projectDir.resolve("build/reports/calisthenics/calisthenics.json"));
   }
 
-  private String runReportTaskWithSourceAndConfig(String fileName, String source, String configBlock)
-      throws IOException {
+  private String runReportTaskWithSourceAndConfig(
+      String fileName, String source, String configBlock) throws IOException {
     writeSettings();
     writeJavaSource(fileName, source);
     writeBuildScript(configBlock);
