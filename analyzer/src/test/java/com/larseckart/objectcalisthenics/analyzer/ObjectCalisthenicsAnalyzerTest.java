@@ -55,6 +55,41 @@ class ObjectCalisthenicsAnalyzerTest {
   }
 
   @Test
+  public void fieldAdviceCarriesGroupedConceptsThroughConstructors() {
+    for (String rule : List.of("too-many-instance-fields", "too-many-record-components")) {
+      Advice advice = Advice.forRule(rule);
+
+      assertThat(advice.options())
+          .contains(
+              "When you group fields into a value object, consider accepting that object in the constructor instead of accepting its parts and building it inside.");
+      assertThat(advice.caution())
+          .contains(
+              "Constructor inputs need not match stored fields; conversion and setup may belong here.");
+    }
+  }
+
+  @Test
+  public void constructorInputsDoNotChangeTheFieldCount() throws IOException {
+    Path source = tempDir.resolve("Product.java");
+    Files.writeString(
+        source,
+        """
+        class Product {
+          private final String barCode;
+          private final ProductDetails details;
+
+          Product(String barCode, String name, int priceInCents) {
+            this.barCode = barCode;
+            this.details = new ProductDetails(name, priceInCents);
+          }
+        }
+        record ProductDetails(String name, int priceInCents) {}
+        """);
+
+    assertThat(analyzer.analyze(List.of(source)).violations()).isEmpty();
+  }
+
+  @Test
   public void detectsTooManyInstanceFields() {
     AnalysisResult result =
         analyzer.analyze(samplesDir.resolve("TooManyFieldsClass.java").getParent());

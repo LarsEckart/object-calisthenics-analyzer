@@ -163,6 +163,15 @@ METRIC methods_over_nested=21
 METRIC getter_setter_methods=4
 ```
 
+### Field-rule advice and constructor inputs
+
+The advice for `too-many-instance-fields` and `too-many-record-components`
+suggests carrying a grouped value object through the constructor instead of
+accepting its parts and building it inside. It also allows conversion and
+setup in constructors. This changes advice only: constructor parameter counts
+and types do not affect the field limit, and an already-grouped type does not
+receive a new finding for its constructor.
+
 ## Mapping the nine rules to JavaParser
 
 | Rule | Relevant AST nodes | Detection idea |

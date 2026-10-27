@@ -28,9 +28,10 @@ public record Advice(String principle, List<String> options, String caution) {
           "Keep related state and its behaviour together.",
           List.of(
               "Group values that change together in a value object.",
+              "When you group fields into a value object, consider accepting that object in the constructor instead of accepting its parts and building it inside.",
               "Move a field and the behaviour that uses it into a focused collaborator.",
               "Let one object hold state while another coordinates two collaborators."),
-          "Choose domain concepts from the code's meaning; field counts alone cannot name them.");
+          "Choose domain concepts from the code's meaning; field counts alone cannot name them. Constructor inputs need not match stored fields; conversion and setup may belong here.");
   private static final Advice ELSE =
       new Advice(
           "Make each path explicit without growing conditional logic.",

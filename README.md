@@ -183,6 +183,21 @@ This checks whole changed files, not just changed lines or changes since a branc
 - Enforce an opt-in policy for raw primitive, boxed primitive, and `String`
   declarations outside configured boundary types.
 
+### Carry grouped concepts through constructors
+
+When you group related fields into a value object, consider accepting that
+object in the constructor too. For example, prefer
+`Product(String barCode, ProductDetails details)` over
+`Product(String barCode, String name, int priceInCents)` that builds
+`ProductDetails` inside. This lets callers work with the new concept rather
+than its parts.
+
+This is design advice, not a constructor rule. The field limit counts stored
+state, not constructor inputs. Conversion and setup may belong in a
+constructor, so its parameter types need not match its field types.
+
+### Raw-type policy
+
 The strict raw-type policy is separate from the heuristic. By default,
 `allowedRawTypes` contains every supported raw type, so it produces no
 findings. Narrow the set to the technical types that may remain raw in domain

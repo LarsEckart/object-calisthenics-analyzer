@@ -67,7 +67,11 @@ class MetricsPrinterTest {
             "ADVICE primitive-obsession",
             "ADVICE too-many-instance-fields")
         .containsOnlyOnce("ADVICE too-many-instance-fields")
-        .containsOnlyOnce("Why: Keep related state and its behaviour together.");
+        .containsOnlyOnce("Why: Keep related state and its behaviour together.")
+        .containsOnlyOnce(
+            "Try: When you group fields into a value object, consider accepting that object in the constructor instead of accepting its parts and building it inside.")
+        .contains(
+            "Constructor inputs need not match stored fields; conversion and setup may belong here.");
   }
 
   @Test
